@@ -12462,3 +12462,48 @@ msgstr "Không tải được bài tập."
 
 msgid "Right answer: {0}"
 msgstr "Đáp án đúng: {0}"
+
+msgid "Stuck on a question? Ask for a hint: first the concept, then where to start, then the solution. A wrong answer gets one more try."
+msgstr "Bí ở câu nào thì xin gợi ý: đầu tiên là khái niệm, sau đó là cách bắt đầu, cuối cùng là lời giải. Trả lời sai sẽ được thử lại một lần."
+
+msgid "{0}/{1} done"
+msgstr "Đã xong {0}/{1}"
+
+msgid "Could not load the hint."
+msgstr "Không tải được gợi ý."
+
+msgid "{0}/{1} hints accepted by Jev"
+msgstr "Jev chấp nhận {0}/{1} gợi ý"
+
+msgid "Jev: gives answer away {0}, consistent {1}, on concept {2}"
+msgstr "Jev: lộ đáp án {0}, khớp lời giải {1}, đúng khái niệm {2}"
+
+msgid "What this question tests"
+msgstr "Câu này kiểm tra"
+
+msgid "Review the lesson: {0}"
+msgstr "Xem lại bài: {0}"
+
+msgid "Where to start"
+msgstr "Bắt đầu từ đâu"
+
+msgid "Look at the question again, or ask for a hint."
+msgstr "Hãy đọc lại đề hoặc xin gợi ý."
+
+msgid "One more try"
+msgstr "Còn 1 lần thử"
+
+msgid "Correct on the second try."
+msgstr "Đúng ở lần thử thứ hai."
+
+msgid "Not quite."
+msgstr "Chưa đúng."
+
+msgid "Hint: the concept"
+msgstr "Gợi ý: khái niệm"
+
+msgid "Hint: where to start"
+msgstr "Gợi ý: bắt đầu từ đâu"
+
+msgid "Show the solution"
+msgstr "Xem lời giải"

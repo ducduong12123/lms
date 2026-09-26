@@ -13,8 +13,8 @@ from typing import Any
 import frappe
 from frappe.utils import add_to_date, get_datetime, now_datetime
 
-from lms.cognilearn.adapters import repository
-from lms.cognilearn.core import adaptive, bkt, elo, policy
+from lms.cognilearn.adapters import hints, repository
+from lms.cognilearn.core import adaptive, bkt, elo, inner_loop, policy
 from lms.cognilearn.core.contracts import Condition
 from lms.lms.doctype.lms_question.lms_question import (
 	QUESTION_CORRECTNESS_FIELDS,
@@ -147,10 +147,16 @@ def _record(
 	condition: str | None = None,
 	quiz_submission: str | None = None,
 	practice_set: str | None = None,
+	mode: str = "independent",
+	weight: float | None = None,
+	hints_used: int = 0,
 ) -> adaptive.Prediction | None:
 	"""Log what Elo and BKT expected, then the outcome, as one append-only evidence row."""
 	now = now_datetime()
-	prediction = adaptive.observe(state, adaptive.Attempt(member, question, correct, now), graph["q_matrix"])
+	weight = elo.evidence_weight(mode, weight)
+	prediction = adaptive.observe(
+		state, adaptive.Attempt(member, question, correct, now, mode, weight), graph["q_matrix"]
+	)
 	frappe.get_doc(
 		{
 			"doctype": "CL Evidence",
@@ -160,10 +166,11 @@ def _record(
 			"course": course,
 			"source": source,
 			"stage": source,
-			"mode": "independent",
+			"mode": mode,
 			"correct": int(correct),
 			"attempt": frappe.db.count("CL Evidence", {"member": member, "item": question}) + 1,
-			"weight": elo.evidence_weight("independent"),
+			"weight": weight,
+			"hints_used": hints_used,
 			"concepts": json.dumps(graph["q_matrix"].get(question) or []),
 			"response": json.dumps(response, ensure_ascii=False),
 			"condition": condition,
@@ -411,31 +418,150 @@ def grade(question: str, answer: Any) -> tuple[bool, list[str], list[str]]:
 	return correct, explanations, right
 
 
-def answer_practice(study, participant, practice_set, question: str, answer: Any) -> dict[str, Any]:
-	questions = _json(practice_set.questions) or []
-	if question not in questions:
-		frappe.throw("This question is not in your current practice set.", frappe.PermissionError)
-	if frappe.db.exists("CL Evidence", {"practice_set": practice_set.name, "item": question}):
-		frappe.throw("You already answered this question.")
-	correct, explanations, right = grade(question, answer)
-	graph = course_graph(study.course)
-	state = course_state(study.course, graph["q_matrix"])
+def _locked_set(practice_set):
+	"""Re-read the set under a row lock: two quick clicks must not both write item states."""
+	return frappe.get_doc("CL Practice Set", practice_set.name, for_update=True)
+
+
+def _item_states(practice_set) -> dict[str, inner_loop.ItemState]:
+	raw = _json(practice_set.item_states) or {}
+	return {
+		question: inner_loop.ItemState.from_dict(raw.get(question))
+		for question in _json(practice_set.questions) or []
+	}
+
+
+def _save_item_states(practice_set, states: dict[str, inner_loop.ItemState]) -> None:
+	practice_set.db_set(
+		"item_states", json.dumps({q: item.to_dict() for q, item in states.items()}, ensure_ascii=False)
+	)
+
+
+def _available_levels(course: str, question: str, graph) -> dict[str, Any]:
+	ladder = hints.ladder(course, question, graph["q_matrix"].get(question, []))
+	return {level: content for level, content in ladder.items() if content}
+
+
+def item_view(course: str, question: str, item: inner_loop.ItemState, graph) -> dict[str, Any]:
+	"""What the learner may see of one question: the hints they asked for, their tries, feedback
+	on their last choice, and the solution only once the question is over. Feedback on a wrong
+	choice never names the right answer while a retry is still open."""
+	available = _available_levels(course, question, graph)
+	view: dict[str, Any] = {
+		"hints": [
+			{"level": level, "content": available.get(level)}
+			for level in item.levels_seen
+			if level != inner_loop.SOLUTION
+		],
+		"tries": [{"answer": t["answer"], "correct": bool(t["correct"])} for t in item.tries],
+		"finished": item.finished,
+		"solved": item.solved,
+		"retry": inner_loop.retry_allowed(item),
+		"hint_total": len(available),
+		"hints_seen": len(item.levels_seen),
+		"next_hint": None if item.finished else inner_loop.next_hint(set(available), item.levels_seen),
+		"feedback": hints.choice_feedback(question, item.tries[-1]["answer"]) if item.tries else None,
+	}
+	if item.finished:
+		view["solution"] = available.get(inner_loop.SOLUTION)
+	return view
+
+
+def _maybe_close(study, participant, practice_set, states, graph) -> dict[str, Any] | None:
+	if not all(item.finished for item in states.values()):
+		return None
+	# The set's accuracy counts first answers only (a solution opened first counts as wrong).
+	results = frappe.get_all("CL Evidence", filters={"practice_set": practice_set.name}, pluck="correct")
+	return _close_set(study, participant, practice_set, [bool(r) for r in results], graph)
+
+
+def _record_first(study, participant, practice_set, question, evidence, response, graph) -> None:
 	_record(
-		state=state,
+		state=course_state(study.course, graph["q_matrix"]),
 		graph=graph,
 		member=participant.member,
 		course=study.course,
 		question=question,
-		correct=correct,
+		correct=evidence.correct,
 		source="practice",
-		response=answer,
+		response=response,
 		condition=participant.condition,
 		practice_set=practice_set.name,
+		mode=evidence.mode,
+		weight=evidence.weight,
+		hints_used=evidence.hints_used,
 	)
-	reply: dict[str, Any] = {"correct": correct, "explanations": explanations, "correct_answers": right}
-	results = frappe.get_all("CL Evidence", filters={"practice_set": practice_set.name}, pluck="correct")
-	if len(results) >= len(questions):
-		reply["replan"] = _close_set(study, participant, practice_set, [bool(r) for r in results], graph)
+
+
+def _item_in_set(practice_set, question: str) -> tuple[dict[str, inner_loop.ItemState], inner_loop.ItemState]:
+	states = _item_states(practice_set)
+	if question not in states:
+		frappe.throw("This question is not in your current practice set.", frappe.PermissionError)
+	return states, states[question]
+
+
+def request_hint(study, participant, practice_set, question: str) -> dict[str, Any]:
+	practice_set = _locked_set(practice_set)
+	states, item = _item_in_set(practice_set, question)
+	graph = course_graph(study.course)
+	level = (
+		None
+		if item.finished
+		else inner_loop.next_hint(set(_available_levels(study.course, question, graph)), item.levels_seen)
+	)
+	if level is None:
+		return {"level": None, "item": item_view(study.course, question, item, graph)}
+	if level == inner_loop.SOLUTION and not item.evidence_recorded:
+		response = {
+			"answer": None,
+			"hints": [*item.levels_seen, level],
+			"inner_loop": inner_loop.INNER_LOOP_VERSION,
+		}
+		_record_first(
+			study,
+			participant,
+			practice_set,
+			question,
+			inner_loop.evidence_for_solution_first(item),
+			response,
+			graph,
+		)
+		item.evidence_recorded = True
+	item.hints.append({"level": level, "at": now_datetime().isoformat()})
+	_save_item_states(practice_set, states)
+	reply: dict[str, Any] = {"level": level, "item": item_view(study.course, question, item, graph)}
+	replan = _maybe_close(study, participant, practice_set, states, graph)
+	if replan:
+		reply["replan"] = replan
+	return reply
+
+
+def answer_practice(study, participant, practice_set, question: str, answer: Any) -> dict[str, Any]:
+	practice_set = _locked_set(practice_set)
+	states, item = _item_in_set(practice_set, question)
+	if not inner_loop.can_answer(item):
+		frappe.throw("You already finished this question.")
+	answers = answer if isinstance(answer, list) else [answer]
+	correct, _explanations, _right = grade(question, answers)
+	graph = course_graph(study.course)
+	if not item.evidence_recorded:
+		response = {"answer": answers, "hints": item.levels_seen, "inner_loop": inner_loop.INNER_LOOP_VERSION}
+		_record_first(
+			study,
+			participant,
+			practice_set,
+			question,
+			inner_loop.evidence_for_first_answer(item, correct),
+			response,
+			graph,
+		)
+		item.evidence_recorded = True
+	item.tries.append({"answer": answers, "correct": correct, "at": now_datetime().isoformat()})
+	_save_item_states(practice_set, states)
+	reply: dict[str, Any] = {"correct": correct, "item": item_view(study.course, question, item, graph)}
+	replan = _maybe_close(study, participant, practice_set, states, graph)
+	if replan:
+		reply["replan"] = replan
 	return reply
 
 
@@ -596,12 +722,8 @@ def student_view(study, member: str) -> dict[str, Any]:
 	if not practice_set:
 		return {**view, "step": "start"}
 	questions = _json(practice_set.questions) or []
-	answered = {
-		row.item: bool(row.correct)
-		for row in frappe.get_all(
-			"CL Evidence", filters={"practice_set": practice_set.name}, fields=["item", "correct"]
-		)
-	}
+	graph = course_graph(study.course)
+	states = _item_states(practice_set)
 	reason = (
 		frappe.db.get_value("CL Decision Log", practice_set.decision, "reason")
 		if practice_set.decision
@@ -622,7 +744,7 @@ def student_view(study, member: str) -> dict[str, Any]:
 		"reason": reason,
 		"last_replan": last_replan[0] if last_replan else None,
 		"questions": [public_question(q) for q in questions],
-		"answered": answered,
+		"items": {q: item_view(study.course, q, states[q], graph) for q in questions},
 	}
 
 

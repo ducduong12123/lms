@@ -50,6 +50,24 @@ def _last_content_hash(course: str) -> str | None:
 	return (json.loads(summary) if summary else {}).get("content_hash")
 
 
+def _existing_concepts(course: str) -> list[dict]:
+	"""The course's current concepts, oldest first, so a re-map keeps their keys and names."""
+	return [
+		{
+			"key": row.kc_key,
+			"label": row.label,
+			"description": row.description or "",
+			"lessons": json.loads(row.lessons or "[]") if isinstance(row.lessons, str) else row.lessons or [],
+		}
+		for row in frappe.get_all(
+			"CL Knowledge Component",
+			filters={"course": course},
+			fields=["kc_key", "label", "description", "lessons"],
+			order_by="creation asc",
+		)
+	]
+
+
 def map_course(course: str, force: bool = False) -> str | None:
 	snapshot = repository.course_snapshot(course)
 	content_hash = hashlib.sha256(
@@ -74,6 +92,7 @@ def map_course(course: str, force: bool = False) -> str | None:
 			snapshot,
 			llm=llm,
 			judge=judge,
+			existing=_existing_concepts(course),
 			accept_at=float(config.accept_threshold or 0.8),
 			reject_at=float(config.reject_threshold or 0.2),
 		)
@@ -98,4 +117,9 @@ def map_course(course: str, force: bool = False) -> str | None:
 		frappe.log_error(title="CogniLearn knowledge map failed", message=frappe.get_traceback())
 	run.save(ignore_permissions=True)
 	frappe.db.commit()
+	if run.status == "Done":
+		# Step hints are written for the accepted concepts; only changed questions are redone.
+		from lms.cognilearn.adapters import hints
+
+		hints.enqueue_hints(course)
 	return run.name

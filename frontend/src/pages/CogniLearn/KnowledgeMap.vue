@@ -1,11 +1,7 @@
 <template>
 	<PageHeader :breadcrumbs="breadcrumbs">
 		<template #actions>
-			<Button
-				:loading="remapping"
-				:label="__('Map again')"
-				@click="remap"
-			/>
+			<Button :loading="remapping" :label="__('Map again')" @click="remap" />
 		</template>
 	</PageHeader>
 	<PageBody>
@@ -13,10 +9,15 @@
 			<div v-if="map.loading && !data" class="text-p-base text-ink-gray-5">
 				{{ __('Loading…') }}
 			</div>
-			<div v-else-if="error" class="text-p-base text-ink-red-5">{{ error }}</div>
+			<div v-else-if="error" class="text-p-base text-ink-red-5">
+				{{ error }}
+			</div>
 
 			<template v-else-if="data">
-				<div class="flex flex-wrap items-center gap-2" data-testid="cl-map-stats">
+				<div
+					class="flex flex-wrap items-center gap-2"
+					data-testid="cl-map-stats"
+				>
 					<Badge
 						variant="subtle"
 						theme="gray"
@@ -37,6 +38,18 @@
 						:label="runLabel"
 					/>
 					<Badge
+						v-if="hintCounts.total"
+						variant="subtle"
+						theme="gray"
+						size="lg"
+						:label="
+							__('{0}/{1} hints accepted by Jev').format(
+								hintCounts.accepted,
+								hintCounts.total,
+							)
+						"
+					/>
+					<Badge
 						variant="subtle"
 						:theme="queue.length ? 'orange' : 'green'"
 						size="lg"
@@ -51,7 +64,11 @@
 						</h2>
 						<span class="flex-1" />
 						<span class="text-p-sm text-ink-gray-6">
-							{{ __('Arrows: accepted prerequisites. Click a concept to see its pending edges and questions.') }}
+							{{
+								__(
+									'Arrows: accepted prerequisites. Click a concept to see its pending edges and questions.',
+								)
+							}}
 						</span>
 					</div>
 					<div class="overflow-x-auto">
@@ -73,7 +90,10 @@
 									markerHeight="7"
 									orient="auto-start-reverse"
 								>
-									<path d="M 0 0 L 10 5 L 0 10 z" style="fill: var(--ink-gray-5)" />
+									<path
+										d="M 0 0 L 10 5 L 0 10 z"
+										style="fill: var(--ink-gray-5)"
+									/>
 								</marker>
 							</defs>
 							<path
@@ -84,7 +104,10 @@
 								marker-end="url(#cl-arrow)"
 								:stroke-dasharray="edge.status === 'Review' ? '5 4' : null"
 								:style="{
-									stroke: edge.status === 'Review' ? 'var(--ink-gray-4)' : 'var(--ink-gray-5)',
+									stroke:
+										edge.status === 'Review'
+											? 'var(--ink-gray-4)'
+											: 'var(--ink-gray-5)',
 								}"
 								stroke-width="1.5"
 							/>
@@ -101,8 +124,14 @@
 									:height="NODE_H"
 									rx="8"
 									:style="{
-										fill: focus === node.name ? 'var(--surface-gray-3)' : 'var(--surface-gray-1)',
-										stroke: focus === node.name ? 'var(--ink-gray-7)' : 'var(--outline-gray-3)',
+										fill:
+											focus === node.name
+												? 'var(--surface-gray-3)'
+												: 'var(--surface-gray-1)',
+										stroke:
+											focus === node.name
+												? 'var(--ink-gray-7)'
+												: 'var(--outline-gray-3)',
 									}"
 								/>
 								<text
@@ -121,7 +150,9 @@
 									font-size="11"
 									style="fill: var(--ink-gray-5)"
 								>
-									{{ __('{0} questions').format(questionsOf(node.name).length) }}
+									{{
+										__('{0} questions').format(questionsOf(node.name).length)
+									}}
 								</text>
 								<title>{{ node.label }}</title>
 							</g>
@@ -130,21 +161,20 @@
 				</section>
 
 				<div class="grid gap-4 lg:grid-cols-2">
-					<section class="min-w-0 space-y-3 rounded-6 border border-outline-gray-2 p-4">
+					<section
+						class="min-w-0 space-y-3 rounded-6 border border-outline-gray-2 p-4"
+					>
 						<h2 class="text-base-semibold text-ink-gray-9">
 							{{ __('Waiting for review') }}
 						</h2>
 						<p class="text-p-sm text-ink-gray-6">
 							{{
 								__(
-									'Decisions the model was unsure about. Nothing here affects learners until you accept it.'
+									'Decisions the model was unsure about. Nothing here affects learners until you accept it.',
 								)
 							}}
 						</p>
-						<div
-							v-if="!queue.length"
-							class="text-p-base text-ink-gray-6"
-						>
+						<div v-if="!queue.length" class="text-p-base text-ink-gray-6">
 							{{ __('Nothing to review.') }}
 						</div>
 						<div
@@ -155,15 +185,30 @@
 						>
 							<div class="text-p-base text-ink-gray-8">
 								<template v-if="row.kind === 'edge'">
-									{{ __('Must “{0}” be learned before “{1}”?').format(label(row.prerequisite), label(row.dependent)) }}
+									{{
+										__('Must “{0}” be learned before “{1}”?').format(
+											label(row.prerequisite),
+											label(row.dependent),
+										)
+									}}
 								</template>
 								<template v-else>
-									{{ __('Does this question test “{0}”?').format(label(row.knowledge_component)) }}
-									<span class="block text-p-sm text-ink-gray-6">{{ data.questions[row.question] }}</span>
+									{{
+										__('Does this question test “{0}”?').format(
+											label(row.knowledge_component),
+										)
+									}}
+									<span class="block text-p-sm text-ink-gray-6">{{
+										data.questions[row.question]
+									}}</span>
 								</template>
 							</div>
 							<div class="flex items-center gap-2">
-								<Badge variant="subtle" theme="gray" :label="`p = ${row.probability.toFixed(2)}`" />
+								<Badge
+									variant="subtle"
+									theme="gray"
+									:label="`p = ${row.probability.toFixed(2)}`"
+								/>
 								<span class="flex-1" />
 								<Button
 									:label="__('Reject')"
@@ -180,20 +225,29 @@
 						</div>
 					</section>
 
-					<section class="min-w-0 space-y-3 rounded-6 border border-outline-gray-2 p-4">
+					<section
+						class="min-w-0 space-y-3 rounded-6 border border-outline-gray-2 p-4"
+					>
 						<div class="flex items-center gap-2">
 							<h2 class="text-base-semibold text-ink-gray-9">
 								{{ focus ? label(focus) : __('Questions and their concepts') }}
 							</h2>
 							<span class="flex-1" />
-							<Button v-if="focus" variant="ghost" :label="__('Show all')" @click="focus = null" />
+							<Button
+								v-if="focus"
+								variant="ghost"
+								:label="__('Show all')"
+								@click="focus = null"
+							/>
 						</div>
 						<div
 							v-for="question in visibleQuestions"
 							:key="question"
 							class="space-y-1 border-b border-outline-gray-1 pb-2 last:border-b-0"
 						>
-							<div class="text-p-base text-ink-gray-8">{{ data.questions[question] }}</div>
+							<div class="text-p-base text-ink-gray-8">
+								{{ data.questions[question] }}
+							</div>
 							<div class="flex flex-wrap gap-1">
 								<Badge
 									v-for="kc in acceptedKcs(question)"
@@ -209,6 +263,19 @@
 									:label="__('Not mapped yet')"
 								/>
 							</div>
+							<p
+								v-if="data.hints?.[question]"
+								class="text-p-sm"
+								:class="
+									data.hints[question].status === 'Accepted'
+										? 'text-ink-gray-7'
+										: 'text-ink-gray-4 line-through'
+								"
+								:title="hintOdds(data.hints[question])"
+								data-testid="cl-map-hint"
+							>
+								{{ __('Hint') }}: {{ data.hints[question].text || '—' }}
+							</p>
 						</div>
 					</section>
 				</div>
@@ -219,7 +286,14 @@
 
 <script setup>
 import { computed, ref } from 'vue'
-import { Badge, Button, call, createResource, toast, usePageMeta } from 'frappe-ui'
+import {
+	Badge,
+	Button,
+	call,
+	createResource,
+	toast,
+	usePageMeta,
+} from 'frappe-ui'
 import PageHeader from '@/components/Layouts/pages/PageHeader.vue'
 import PageBody from '@/components/Layouts/pages/PageBody.vue'
 import { layoutGraph, NODE_H, NODE_W } from '@/utils/cognilearnGraph'
@@ -245,7 +319,9 @@ const map = createResource({
 const data = computed(() => map.data)
 const lastRun = computed(() => data.value?.last_run)
 const labels = computed(() =>
-	Object.fromEntries((data.value?.components || []).map((c) => [c.name, c.label]))
+	Object.fromEntries(
+		(data.value?.components || []).map((c) => [c.name, c.label]),
+	),
 )
 const label = (name) => labels.value[name] || name
 const short = (text) => (text.length > 24 ? text.slice(0, 23) + '…' : text)
@@ -256,15 +332,15 @@ const runLabel = computed(() => {
 	if (run.status !== 'Done') return __('Last run: {0}').format(run.status)
 	return __('{0}% decided automatically ({1})').format(
 		Math.round(run.automatic_share || 0),
-		run.judge_source
+		run.judge_source,
 	)
 })
 
 const layout = computed(() =>
 	layoutGraph(
 		data.value?.components || [],
-		(data.value?.edges || []).filter((e) => e.status === 'Accepted')
-	)
+		(data.value?.edges || []).filter((e) => e.status === 'Accepted'),
+	),
 )
 
 const drawnEdges = computed(() => {
@@ -272,7 +348,9 @@ const drawnEdges = computed(() => {
 	// Pending edges would clutter the whole graph, so they show only around the concept in focus.
 	const shown = (e) =>
 		e.status === 'Accepted' ||
-		(e.status === 'Review' && focus.value && [e.prerequisite, e.dependent].includes(focus.value))
+		(e.status === 'Review' &&
+			focus.value &&
+			[e.prerequisite, e.dependent].includes(focus.value))
 	return (data.value?.edges || [])
 		.filter((e) => shown(e) && at[e.prerequisite] && at[e.dependent])
 		.map((e) => {
@@ -294,24 +372,48 @@ const drawnEdges = computed(() => {
 
 const links = computed(() => data.value?.links || [])
 const mappedQuestions = computed(
-	() => new Set(links.value.filter((l) => l.status === 'Accepted').map((l) => l.question)).size
+	() =>
+		new Set(
+			links.value.filter((l) => l.status === 'Accepted').map((l) => l.question),
+		).size,
 )
 const acceptedKcs = (question) =>
 	links.value
 		.filter((l) => l.question === question && l.status === 'Accepted')
 		.map((l) => l.knowledge_component)
 const questionsOf = (kc) =>
-	links.value.filter((l) => l.knowledge_component === kc && l.status === 'Accepted')
+	links.value.filter(
+		(l) => l.knowledge_component === kc && l.status === 'Accepted',
+	)
 
-const allQuestions = computed(() => [...new Set(links.value.map((l) => l.question))])
+const allQuestions = computed(() => [
+	...new Set(links.value.map((l) => l.question)),
+])
+
+const hintCounts = computed(() => {
+	const rows = Object.values(data.value?.hints || {})
+	return {
+		total: rows.length,
+		accepted: rows.filter((h) => h.status === 'Accepted').length,
+	}
+})
+const hintOdds = (hint) =>
+	__('Jev: gives answer away {0}, consistent {1}, on concept {2}').format(
+		hint.p_leak ?? '—',
+		hint.p_faithful ?? '—',
+		hint.p_on_concept ?? '—',
+	)
 const visibleQuestions = computed(() =>
 	focus.value
 		? allQuestions.value.filter((q) =>
 				links.value.some(
-					(l) => l.question === q && l.knowledge_component === focus.value && l.status !== 'Rejected'
-				)
+					(l) =>
+						l.question === q &&
+						l.knowledge_component === focus.value &&
+						l.status !== 'Rejected',
+				),
 			)
-		: allQuestions.value
+		: allQuestions.value,
 )
 
 const queue = computed(() => [
@@ -327,9 +429,11 @@ const visibleQueue = computed(() =>
 		.filter(
 			(row) =>
 				!focus.value ||
-				[row.prerequisite, row.dependent, row.knowledge_component].includes(focus.value)
+				[row.prerequisite, row.dependent, row.knowledge_component].includes(
+					focus.value,
+				),
 		)
-		.sort((a, b) => b.probability - a.probability)
+		.sort((a, b) => b.probability - a.probability),
 )
 
 function toggleFocus(name) {
@@ -360,7 +464,9 @@ async function decide(row, status) {
 async function remap() {
 	remapping.value = true
 	try {
-		await call('lms.cognilearn.api.run_knowledge_map', { course: props.courseName })
+		await call('lms.cognilearn.api.run_knowledge_map', {
+			course: props.courseName,
+		})
 		toast.success(__('Mapping started. Reload in a minute to see the result.'))
 	} finally {
 		remapping.value = false

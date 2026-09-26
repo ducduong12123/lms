@@ -5,7 +5,9 @@
 			<div v-if="status.loading && !view" class="text-p-base text-ink-gray-5">
 				{{ __('Loading…') }}
 			</div>
-			<div v-else-if="error" class="text-p-base text-ink-red-5">{{ error }}</div>
+			<div v-else-if="error" class="text-p-base text-ink-red-5">
+				{{ error }}
+			</div>
 
 			<div
 				v-else-if="view && !view.study"
@@ -25,7 +27,7 @@
 					<p class="text-p-base text-ink-gray-7">
 						{{
 							__(
-								'A short quiz on your own, without answers shown. It tells the system what you already know and where the gaps are.'
+								'A short quiz on your own, without answers shown. It tells the system what you already know and where the gaps are.',
 							)
 						}}
 					</p>
@@ -46,7 +48,14 @@
 					<p class="text-p-base text-ink-gray-7">
 						{{
 							__(
-								'Practice comes in short sets. After each set the system decides what you should work on next.'
+								'Practice comes in short sets. After each set the system decides what you should work on next.',
+							)
+						}}
+					</p>
+					<p class="text-p-base text-ink-gray-7">
+						{{
+							__(
+								'Stuck on a question? Ask for a hint: first the concept, then where to start, then the solution. A wrong answer gets one more try.',
 							)
 						}}
 					</p>
@@ -64,7 +73,7 @@
 							{{
 								__('Practice set {0} of {1}').format(
 									view.set_index,
-									view.budget_sets
+									view.budget_sets,
 								)
 							}}
 						</h1>
@@ -73,10 +82,7 @@
 							variant="subtle"
 							theme="gray"
 							:label="
-								__('{0}/{1} answered').format(
-									answeredCount,
-									view.questions.length
-								)
+								__('{0}/{1} done').format(doneCount, view.questions.length)
 							"
 						/>
 					</div>
@@ -95,73 +101,17 @@
 						{{ view.reason }}
 					</p>
 
-					<section
+					<PracticeQuestion
 						v-for="(question, position) in view.questions"
 						:key="question.name"
-						class="space-y-3 rounded-6 border border-outline-gray-2 p-4"
-						data-testid="cl-question"
-					>
-						<div class="flex gap-2 text-p-base text-ink-gray-9">
-							<span class="shrink-0 text-ink-gray-5">{{ position + 1 }}.</span>
-							<div
-								class="prose-sm min-w-0"
-								v-safe-html:rich="question.question"
-							/>
-						</div>
-
-						<div v-if="question.type === 'Choices'" class="space-y-2">
-							<button
-								v-for="option in question.options"
-								:key="option"
-								type="button"
-								class="w-full rounded-6 border px-3 py-2 text-start text-p-base focus-visible:ring-2"
-								:class="optionClass(question, option)"
-								:disabled="isDone(question)"
-								:aria-pressed="isPicked(question, option)"
-								@click="pick(question, option)"
-							>
-								{{ option }}
-							</button>
-						</div>
-						<FormControl
-							v-else
-							v-model="picked[question.name]"
-							variant="outline"
-							:disabled="isDone(question)"
-							:placeholder="__('Your answer')"
-						/>
-
-						<div
-							v-if="isDone(question)"
-							class="space-y-1 text-p-base"
-							:class="
-								resultOf(question) ? 'text-ink-green-6' : 'text-ink-red-6'
-							"
-						>
-							<div>{{ resultOf(question) ? __('Correct.') : __('Not yet.') }}</div>
-							<p
-								v-if="!resultOf(question) && feedback[question.name]?.correct_answers?.length"
-								class="text-ink-gray-8"
-							>
-								{{ __('Right answer: {0}').format(feedback[question.name].correct_answers.join(', ')) }}
-							</p>
-							<p
-								v-for="(text, i) in feedback[question.name]?.explanations || []"
-								:key="i"
-								class="text-ink-gray-7"
-							>
-								{{ text }}
-							</p>
-						</div>
-						<Button
-							v-else
-							variant="solid"
-							:disabled="!hasAnswer(question) || busy === question.name"
-							:loading="busy === question.name"
-							:label="__('Check')"
-							@click="answer(question)"
-						/>
-					</section>
+						:question="question"
+						:item="view.items[question.name]"
+						:position="position + 1"
+						:course-name="courseName"
+						:busy="busy?.question === question.name ? busy.kind : null"
+						@answer="(value) => answer(question, value)"
+						@hint="hint(question)"
+					/>
 
 					<section
 						v-if="replan"
@@ -188,7 +138,7 @@
 					<p class="text-p-base text-ink-gray-7">
 						{{
 							__(
-								'Your recheck opens on {0}. Coming back after a few days shows whether what you practised has stuck.'
+								'Your recheck opens on {0}. Coming back after a few days shows whether what you practised has stuck.',
 							).format(dueLabel)
 						}}
 					</p>
@@ -223,17 +173,16 @@
 </template>
 
 <script setup>
-import { computed, reactive, ref } from 'vue'
-import { Badge, Button, FormControl, call, createResource, usePageMeta } from 'frappe-ui'
+import { computed, ref } from 'vue'
+import { Badge, Button, call, createResource, usePageMeta } from 'frappe-ui'
 import PageHeader from '@/components/Layouts/pages/PageHeader.vue'
 import PageBody from '@/components/Layouts/pages/PageBody.vue'
+import PracticeQuestion from '@/components/CogniLearn/PracticeQuestion.vue'
 
 const props = defineProps({
 	courseName: { type: String, required: true },
 })
 
-const picked = reactive({})
-const feedback = reactive({})
 const busy = ref(null)
 const starting = ref(false)
 const replan = ref(null)
@@ -249,29 +198,16 @@ const status = createResource({
 })
 
 const view = computed(() => status.data)
-const answeredCount = computed(
-	() => Object.keys(view.value?.answered || {}).length
+const doneCount = computed(
+	() =>
+		Object.values(view.value?.items || {}).filter((item) => item.finished)
+			.length,
 )
 const dueLabel = computed(() =>
 	view.value?.recheck_due_at
 		? new Date(view.value.recheck_due_at.replace(' ', 'T')).toLocaleString()
-		: ''
+		: '',
 )
-
-const isDone = (question) => question.name in (view.value?.answered || {})
-const resultOf = (question) => view.value?.answered?.[question.name]
-const isPicked = (question, option) => picked[question.name] === option
-const hasAnswer = (question) => String(picked[question.name] || '').trim() !== ''
-
-function optionClass(question, option) {
-	return isPicked(question, option)
-		? 'border-outline-gray-5 bg-surface-gray-3'
-		: 'border-outline-gray-2 bg-surface-base'
-}
-
-function pick(question, option) {
-	picked[question.name] = option
-}
 
 async function start() {
 	starting.value = true
@@ -286,31 +222,45 @@ async function start() {
 	}
 }
 
-async function answer(question) {
-	busy.value = question.name
+function applyReply(question, reply) {
+	status.data = {
+		...view.value,
+		items: { ...view.value.items, [question.name]: reply.item },
+	}
+	if (reply.replan) replan.value = reply.replan
+}
+
+async function send(question, kind, method, params) {
+	busy.value = { question: question.name, kind }
 	try {
-		const reply = await call('lms.cognilearn.api.answer_practice', {
-			course: props.courseName,
-			question: question.name,
-			answer: JSON.stringify([picked[question.name]]),
-		})
-		feedback[question.name] = reply
-		status.data = {
-			...view.value,
-			answered: { ...view.value.answered, [question.name]: reply.correct },
-		}
-		if (reply.replan) replan.value = reply.replan
+		applyReply(
+			question,
+			await call(method, {
+				course: props.courseName,
+				question: question.name,
+				...params,
+			}),
+		)
 	} catch (err) {
-		error.value = err?.messages?.[0] || __('Could not check your answer.')
+		error.value =
+			err?.messages?.[0] ||
+			(kind === 'hint'
+				? __('Could not load the hint.')
+				: __('Could not check your answer.'))
 	} finally {
 		busy.value = null
 	}
 }
 
+const answer = (question, value) =>
+	send(question, 'answer', 'lms.cognilearn.api.answer_practice', {
+		answer: JSON.stringify([value]),
+	})
+const hint = (question) =>
+	send(question, 'hint', 'lms.cognilearn.api.request_hint', {})
+
 function reload() {
 	replan.value = null
-	for (const key of Object.keys(picked)) delete picked[key]
-	for (const key of Object.keys(feedback)) delete feedback[key]
 	status.reload()
 }
 
@@ -322,7 +272,10 @@ const breadcrumbs = computed(() => [
 	},
 	{
 		label: __('Adaptive practice'),
-		route: { name: 'CogniLearnPractice', params: { courseName: props.courseName } },
+		route: {
+			name: 'CogniLearnPractice',
+			params: { courseName: props.courseName },
+		},
 	},
 ])
 

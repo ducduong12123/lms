@@ -38,6 +38,12 @@ Chỉ dùng id bài và id câu hỏi có trong dữ liệu. Không thêm markdo
 Khóa học: {course}
 Các bài (theo thứ tự): {lessons}"""
 
+EXISTING_PROMPT = """
+Khóa học này ĐÃ có danh mục khái niệm dưới đây (giáo viên có thể đã duyệt theo nó).
+Giữ NGUYÊN mọi key đã có, trả lại chúng trong kết quả kèm prerequisites, lessons, questions cập nhật.
+Không đổi tên, không tách, không gộp các mục đã có. Chỉ thêm khái niệm MỚI cho nội dung
+mà danh mục chưa phủ. Danh mục hiện có: {existing}"""
+
 
 @dataclass
 class KnowledgeMap:
@@ -91,8 +97,14 @@ def question_state(question: dict[str, Any]) -> dict[str, Any]:
 	return {"question": question.get("text"), "options": question.get("options") or []}
 
 
-def propose_components(llm, course: dict[str, Any]) -> list[dict[str, Any]]:
-	"""One course-wide catalogue, so the same concept gets one key across lessons."""
+def propose_components(
+	llm, course: dict[str, Any], existing: list[dict[str, Any]] | None = None
+) -> list[dict[str, Any]]:
+	"""One course-wide catalogue, so the same concept gets one key across lessons.
+
+	With ``existing`` concepts (a re-map), their keys, labels and descriptions are kept as stored
+	and listed first, so decisions a teacher reviewed stay attached to the same concepts; the
+	LLM may only add concepts for content the catalogue does not cover yet."""
 	lessons = course.get("lessons") or []
 	payload = [
 		{
@@ -108,14 +120,39 @@ def propose_components(llm, course: dict[str, Any]) -> list[dict[str, Any]]:
 	]
 	low = max(3, min(8, len(lessons)))
 	prompt = PROPOSE_PROMPT.format(low=low, high=low + 4, course=course.get("title", ""), lessons=payload)
+	if existing:
+		kept = [
+			{"key": e["key"], "label": e["label"], "description": e.get("description", "")} for e in existing
+		]
+		prompt += EXISTING_PROMPT.format(existing=kept)
 	raw = parse_json(llm.chat(PROPOSE_SYSTEM, prompt))
 	lesson_ids = {lesson["id"] for lesson in lessons}
 	question_ids = {q["id"] for lesson in lessons for q in lesson.get("questions") or []}
 	catalogue: dict[str, dict[str, Any]] = {}
+	existing_keys = {entry["key"] for entry in existing or []}
+	refreshed: set[str] = set()
+	for entry in existing or []:
+		catalogue[entry["key"]] = {
+			"key": entry["key"],
+			"label": entry["label"],
+			"description": entry.get("description", ""),
+			"prerequisites": [],
+			"lessons": [lesson for lesson in entry.get("lessons") or [] if lesson in lesson_ids],
+			"questions": [],
+		}
 	for entry in raw if isinstance(raw, list) else []:
 		if not isinstance(entry, dict) or not str(entry.get("label") or "").strip():
 			continue
 		key = slug(entry.get("key") or entry["label"])
+		proposal_lessons = [lesson for lesson in entry.get("lessons") or [] if lesson in lesson_ids]
+		if key in existing_keys and key not in refreshed:
+			refreshed.add(key)
+			# An existing concept: keep its name, take the LLM's updated links.
+			known = catalogue[key]
+			known["prerequisites"] = [slug(p) for p in entry.get("prerequisites") or [] if str(p).strip()]
+			known["lessons"] = list(dict.fromkeys(known["lessons"] + proposal_lessons))
+			known["questions"] = [q for q in entry.get("questions") or [] if q in question_ids]
+			continue
 		catalogue.setdefault(
 			key,
 			{
@@ -151,6 +188,7 @@ def build_knowledge_map(
 	llm,
 	judge,
 	catalogue: list[dict[str, Any]] | None = None,
+	existing: list[dict[str, Any]] | None = None,
 	accept_at: float = ACCEPT_AT,
 	reject_at: float = REJECT_AT,
 ) -> KnowledgeMap:
@@ -158,7 +196,7 @@ def build_knowledge_map(
 	result = KnowledgeMap(course=course.get("name") or course.get("title") or "")
 	result.judge_source = "jev" if getattr(judge, "available", False) else "fallback"
 	lessons = course.get("lessons") or []
-	catalogue = catalogue if catalogue is not None else propose_components(llm, course)
+	catalogue = catalogue if catalogue is not None else propose_components(llm, course, existing)
 	lesson_of_question = {q["id"]: lesson["id"] for lesson in lessons for q in lesson.get("questions") or []}
 
 	# 1. Components from the course-wide catalogue; a concept's lessons include those of its questions.

@@ -6,7 +6,7 @@ import json
 
 import frappe
 
-from lms.cognilearn.adapters import events, repository, study
+from lms.cognilearn.adapters import events, hints, repository, study
 from lms.cognilearn.core import evaluator
 from lms.lms.utils import has_course_instructor_role, has_moderator_role
 
@@ -122,11 +122,20 @@ def get_knowledge_map(course: str) -> dict:
 				repository._question(link.question) if link.question_doctype == "LMS Question" else None
 			)
 			questions[link.question] = question["text"] if question else link.question
+	step_hints = {
+		row.question: row
+		for row in frappe.get_all(
+			"CL Hint",
+			filters={"course": course, "level": "step"},
+			fields=["question", "status", "text", "p_leak", "p_faithful", "p_on_concept", "judge_source"],
+		)
+	}
 	return {
 		"components": components,
 		"edges": edges,
 		"links": links,
 		"questions": questions,
+		"hints": step_hints,
 		"course_title": frappe.db.get_value("LMS Course", course, "title"),
 		"last_run": runs[0] if runs else None,
 	}
@@ -199,6 +208,25 @@ def answer_practice(course: str, question: str, answer: str | list) -> dict:
 	if isinstance(answer, str) and answer.startswith("["):
 		answer = json.loads(answer)
 	return study.answer_practice(found, participant, practice_set, question, answer)
+
+
+@frappe.whitelist(methods=["POST"])
+def request_hint(course: str, question: str) -> dict:
+	"""Next rung of the help ladder for one question of the learner's open set."""
+	member = _require_login()
+	found = _study(course)
+	participant = study.ensure_participant(found, member)
+	practice_set = study.open_set(participant)
+	if not practice_set:
+		frappe.throw("You have no open practice set.")
+	return study.request_hint(found, participant, practice_set, question)
+
+
+@frappe.whitelist(methods=["POST"])
+def generate_hints(course: str, force: int = 0) -> dict:
+	_require_teacher()
+	hints.enqueue_hints(course, force=bool(int(force)))
+	return {"queued": True}
 
 
 @frappe.whitelist()

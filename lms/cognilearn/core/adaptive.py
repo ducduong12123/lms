@@ -107,7 +107,8 @@ def observe(state: CourseState, attempt: Attempt, q_matrix: dict[str, list[str]]
 		requested_weight=attempt.weight,
 		freeze_item=False,
 	)
-	bkt.update(known, concepts, attempt.correct)
+	if attempt.mode == "independent":  # knowledge tracing learns from unaided first answers only
+		bkt.update(known, concepts, attempt.correct)
 	return prediction
 
 

@@ -346,6 +346,23 @@ class KnowledgeMapping(unittest.TestCase):
 		self.assertEqual(catalogue[0]["questions"], ["Q1"])
 		self.assertEqual(catalogue[1]["prerequisites"], ["node_structure"])
 
+	def test_a_remap_keeps_existing_concepts_and_only_adds_new_ones(self):
+		existing = [
+			{"key": "node_structure", "label": "Cấu trúc node", "description": "d", "lessons": ["L1"]},
+			{"key": "traversal", "label": "Duyệt danh sách", "description": "", "lessons": ["L1"]},
+		]
+		reply = (
+			'[{"key": "node_structure", "label": "Tên mới do LLM đặt", "lessons": ["L2"], "questions": ["Q1"]},'
+			' {"key": "insert_after", "label": "Chèn sau k", "prerequisites": ["node_structure"], "questions": ["Q2"]}]'
+		)
+		llm = FakeLLM(reply)
+		catalogue = propose_components(llm, COURSE, existing)
+		self.assertEqual([c["key"] for c in catalogue], ["node_structure", "traversal", "insert_after"])
+		self.assertEqual(catalogue[0]["label"], "Cấu trúc node")  # stored name wins
+		self.assertEqual(catalogue[0]["lessons"], ["L1", "L2"])
+		self.assertEqual(catalogue[0]["questions"], ["Q1"])
+		self.assertEqual(catalogue[1]["label"], "Duyệt danh sách")  # kept although the LLM dropped it
+
 	def test_jev_error_degrades_to_fallback(self):
 		def broken(url, payload, headers, timeout):
 			raise TimeoutError("slow")

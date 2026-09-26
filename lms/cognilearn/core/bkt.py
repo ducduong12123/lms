@@ -13,7 +13,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-BKT_VERSION = "bkt_standard_v1_conjunctive"
+BKT_VERSION = "bkt_standard_v2_conjunctive_unaided"
 
 
 @dataclass(frozen=True)

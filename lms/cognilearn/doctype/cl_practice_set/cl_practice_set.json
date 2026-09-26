@@ -11,6 +11,7 @@
   "set_index",
   "focus_kc",
   "questions",
+  "item_states",
   "status",
   "accuracy",
   "decision"
@@ -57,6 +58,12 @@
    "label": "Questions"
   },
   {
+   "fieldname": "item_states",
+   "fieldtype": "JSON",
+   "label": "Item States",
+   "description": "Per question: hints seen and tries (inner loop). Only the first try is evidence."
+  },
+  {
    "fieldname": "status",
    "fieldtype": "Select",
    "label": "Status",
@@ -78,7 +85,7 @@
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-09-26 09:00:00.000000",
+ "modified": "2026-09-26 15:00:00.000000",
  "modified_by": "Administrator",
  "module": "CogniLearn",
  "name": "CL Practice Set",

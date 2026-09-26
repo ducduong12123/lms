@@ -16,6 +16,7 @@ import frappe
 from frappe.utils import get_datetime, now_datetime
 
 from lms.cognilearn.adapters import study as study_adapter
+from lms.cognilearn.core import inner_loop
 
 
 def _pseudonym(study_id: str, member: str) -> str:
@@ -76,6 +77,8 @@ def export_study(course: str, folder: str | None = None) -> dict:
 			"source",
 			"correct",
 			"mode",
+			"weight",
+			"hints_used",
 			"concepts",
 			"elo_p",
 			"bkt_p",
@@ -97,6 +100,8 @@ def export_study(course: str, folder: str | None = None) -> dict:
 				"source": row.source,
 				"correct": int(row.correct),
 				"mode": row.mode,
+				"weight": row.weight,
+				"hints_used": row.hints_used or 0,
 				# The Q-matrix row as it is now (teacher reviewed), for replay; plus what was logged.
 				"concepts": json.dumps(graph["q_matrix"].get(row.item, [])),
 				"concepts_at_time": row.concepts or "[]",
@@ -129,6 +134,32 @@ def export_study(course: str, folder: str | None = None) -> dict:
 		],
 		order_by="creation asc",
 	)
+	items = []
+	for practice_set in frappe.get_all(
+		"CL Practice Set",
+		filters={"course": course},
+		fields=["name", "member", "set_index", "item_states"],
+		order_by="creation asc",
+	):
+		states = json.loads(practice_set.item_states or "{}")
+		for question, raw in states.items():
+			item = inner_loop.ItemState.from_dict(raw)
+			items.append(
+				{
+					"learner": anon(practice_set.member),
+					"condition": condition_of.get(practice_set.member, ""),
+					"practice_set": practice_set.name,
+					"set_index": practice_set.set_index,
+					"question": question,
+					"hint_levels": " ".join(item.levels_seen),
+					"tries": len(item.tries),
+					"first_correct": "" if item.first_correct is None else int(item.first_correct),
+					"solved": int(item.solved),
+					"finished": int(item.finished),
+					"flags": " ".join(inner_loop.gaming_flags(item)),
+				}
+			)
+	counts["practice_items"] = _write(folder, "practice_items.csv", items)
 	counts["decisions"] = _write(
 		folder,
 		"decisions.csv",

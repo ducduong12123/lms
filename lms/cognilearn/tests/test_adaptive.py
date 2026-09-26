@@ -77,6 +77,16 @@ class Replay(unittest.TestCase):
 		self.assertIn("count", after)
 
 
+class GuidedEvidence(unittest.TestCase):
+	def test_hinted_answers_move_elo_less_and_bkt_not_at_all(self):
+		free = adaptive.replay_course([adaptive.Attempt("a", "q1", True, T0)], Q)
+		hinted = adaptive.replay_course([adaptive.Attempt("a", "q1", True, T0, "guided", 0.3)], Q)
+		self.assertGreater(free.elo["a"]["count"].elo, hinted.elo["a"]["count"].elo)
+		self.assertGreater(hinted.elo["a"]["count"].elo, 1000)
+		self.assertEqual(hinted.bkt["a"], {})
+		self.assertIn("count", free.bkt["a"])
+
+
 class Diagnosis(unittest.TestCase):
 	@staticmethod
 	def mastery(**values):

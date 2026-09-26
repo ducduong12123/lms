@@ -66,6 +66,7 @@ def compare(rows: list[dict], sources: set[str] | None = None) -> dict:
 			bool(int(r["correct"])),
 			datetime.fromisoformat(r["at"]),
 			r.get("mode") or "independent",
+			float(r["weight"]) if r.get("weight") not in (None, "") else None,
 		)
 		for r in rows
 	]
