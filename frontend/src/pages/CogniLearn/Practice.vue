@@ -5,9 +5,7 @@
 			<div v-if="status.loading && !view" class="text-p-base text-ink-gray-5">
 				{{ __('Loading…') }}
 			</div>
-			<div v-else-if="error" class="text-p-base text-ink-red-5">
-				{{ error }}
-			</div>
+			<div v-else-if="error" class="text-p-base text-ink-red-5">{{ error }}</div>
 
 			<div
 				v-else-if="view && !view.study"
@@ -37,96 +35,6 @@
 						<Button variant="solid" :label="__('Take the baseline quiz')" />
 					</router-link>
 				</section>
-
-				<section
-					v-else-if="view.step === 'start'"
-					class="space-y-3 rounded-6 border border-outline-gray-2 p-4"
-				>
-					<h2 class="text-base-semibold text-ink-gray-9">
-						{{ __('Your practice is ready') }}
-					</h2>
-					<p class="text-p-base text-ink-gray-7">
-						{{
-							__(
-								'Practice comes in short sets. After each set the system decides what you should work on next.',
-							)
-						}}
-					</p>
-					<p class="text-p-base text-ink-gray-7">
-						{{
-							__(
-								'Stuck on a question? Ask for a hint: first the concept, then where to start, then the solution. A wrong answer gets one more try.',
-							)
-						}}
-					</p>
-					<Button
-						variant="solid"
-						:loading="starting"
-						:label="__('Start practising')"
-						@click="start"
-					/>
-				</section>
-
-				<template v-else-if="view.step === 'practice'">
-					<div class="flex flex-wrap items-center gap-2">
-						<h1 class="text-lg-semibold text-ink-gray-9">
-							{{
-								__('Practice set {0} of {1}').format(
-									view.set_index,
-									view.budget_sets,
-								)
-							}}
-						</h1>
-						<span class="flex-1" />
-						<Badge
-							variant="subtle"
-							theme="gray"
-							:label="
-								__('{0}/{1} done').format(doneCount, view.questions.length)
-							"
-						/>
-					</div>
-					<p
-						v-if="view.last_replan && view.set_index > 1"
-						class="rounded-6 bg-surface-gray-2 px-3 py-2 text-p-sm text-ink-gray-8"
-						data-testid="cl-replan"
-					>
-						{{ view.last_replan.reason }}
-					</p>
-					<p
-						v-if="view.reason"
-						class="text-p-base text-ink-gray-7"
-						data-testid="cl-plan-reason"
-					>
-						{{ view.reason }}
-					</p>
-
-					<PracticeQuestion
-						v-for="(question, position) in view.questions"
-						:key="question.name"
-						:question="question"
-						:item="view.items[question.name]"
-						:position="position + 1"
-						:course-name="courseName"
-						:busy="busy?.question === question.name ? busy.kind : null"
-						@answer="(value) => answer(question, value)"
-						@hint="hint(question)"
-					/>
-
-					<section
-						v-if="replan"
-						class="space-y-3 rounded-6 border border-outline-gray-2 p-4"
-						data-testid="cl-set-done"
-					>
-						<h2 class="text-base-semibold text-ink-gray-9">
-							{{ __('Set finished') }}
-						</h2>
-						<p class="text-p-base text-ink-gray-7">
-							{{ replan.reason_for_student }}
-						</p>
-						<Button variant="solid" :label="__('Continue')" @click="reload" />
-					</section>
-				</template>
 
 				<section
 					v-else-if="view.step === 'waiting'"
@@ -167,6 +75,53 @@
 				>
 					{{ __('You have finished this study. Thank you!') }}
 				</section>
+
+				<section
+					v-if="view.lessons?.length && view.step !== 'baseline'"
+					class="space-y-3 rounded-6 border border-outline-gray-2 p-4"
+					data-testid="cl-lessons"
+				>
+					<div class="flex flex-wrap items-center gap-2">
+						<h2 class="text-base-semibold text-ink-gray-9">
+							{{ __('Practice by lesson') }}
+						</h2>
+						<span class="flex-1" />
+						<Badge
+							variant="subtle"
+							theme="gray"
+							:label="__('{0}/{1} done').format(lessonsDone, view.lessons.length)"
+						/>
+					</div>
+					<p class="text-p-base text-ink-gray-7">
+						{{
+							__(
+								'Each lesson ends with a short practice on what you have studied so far. The recheck opens a few days after the last one.',
+							)
+						}}
+					</p>
+					<router-link
+						v-for="lesson in view.lessons"
+						:key="lesson.lesson"
+						:to="{
+							name: 'Lesson',
+							params: {
+								courseName,
+								chapterNumber: lesson.chapter_number,
+								lessonNumber: lesson.lesson_number,
+							},
+						}"
+						class="flex items-center gap-3 rounded-6 border border-outline-gray-2 px-3 py-2 hover:bg-surface-gray-2"
+					>
+						<span class="min-w-0 flex-1 truncate text-p-base text-ink-gray-8">
+							{{ lesson.title }}
+						</span>
+						<Badge
+							variant="subtle"
+							:theme="lessonTheme[lesson.status]"
+							:label="lessonLabel[lesson.status]"
+						/>
+					</router-link>
+				</section>
 			</template>
 		</div>
 	</PageBody>
@@ -174,18 +129,14 @@
 
 <script setup>
 import { computed, ref } from 'vue'
-import { Badge, Button, call, createResource, usePageMeta } from 'frappe-ui'
+import { Badge, Button, createResource, usePageMeta } from 'frappe-ui'
 import PageHeader from '@/components/Layouts/pages/PageHeader.vue'
 import PageBody from '@/components/Layouts/pages/PageBody.vue'
-import PracticeQuestion from '@/components/CogniLearn/PracticeQuestion.vue'
 
 const props = defineProps({
 	courseName: { type: String, required: true },
 })
 
-const busy = ref(null)
-const starting = ref(false)
-const replan = ref(null)
 const error = ref('')
 
 const status = createResource({
@@ -198,71 +149,20 @@ const status = createResource({
 })
 
 const view = computed(() => status.data)
-const doneCount = computed(
-	() =>
-		Object.values(view.value?.items || {}).filter((item) => item.finished)
-			.length,
+const lessonsDone = computed(
+	() => (view.value?.lessons || []).filter((lesson) => lesson.status === 'done').length,
 )
+const lessonTheme = { done: 'green', open: 'orange', todo: 'gray' }
+const lessonLabel = computed(() => ({
+	done: __('Done'),
+	open: __('In progress'),
+	todo: __('Not started'),
+}))
 const dueLabel = computed(() =>
 	view.value?.recheck_due_at
 		? new Date(view.value.recheck_due_at.replace(' ', 'T')).toLocaleString()
 		: '',
 )
-
-async function start() {
-	starting.value = true
-	try {
-		status.data = await call('lms.cognilearn.api.start_practice', {
-			course: props.courseName,
-		})
-	} catch (err) {
-		error.value = err?.messages?.[0] || __('Could not start practice.')
-	} finally {
-		starting.value = false
-	}
-}
-
-function applyReply(question, reply) {
-	status.data = {
-		...view.value,
-		items: { ...view.value.items, [question.name]: reply.item },
-	}
-	if (reply.replan) replan.value = reply.replan
-}
-
-async function send(question, kind, method, params) {
-	busy.value = { question: question.name, kind }
-	try {
-		applyReply(
-			question,
-			await call(method, {
-				course: props.courseName,
-				question: question.name,
-				...params,
-			}),
-		)
-	} catch (err) {
-		error.value =
-			err?.messages?.[0] ||
-			(kind === 'hint'
-				? __('Could not load the hint.')
-				: __('Could not check your answer.'))
-	} finally {
-		busy.value = null
-	}
-}
-
-const answer = (question, value) =>
-	send(question, 'answer', 'lms.cognilearn.api.answer_practice', {
-		answer: JSON.stringify([value]),
-	})
-const hint = (question) =>
-	send(question, 'hint', 'lms.cognilearn.api.request_hint', {})
-
-function reload() {
-	replan.value = null
-	status.reload()
-}
 
 const breadcrumbs = computed(() => [
 	{ label: __('Courses'), route: { name: 'Courses' } },
@@ -272,10 +172,7 @@ const breadcrumbs = computed(() => [
 	},
 	{
 		label: __('Adaptive practice'),
-		route: {
-			name: 'CogniLearnPractice',
-			params: { courseName: props.courseName },
-		},
+		route: { name: 'CogniLearnPractice', params: { courseName: props.courseName } },
 	},
 ])
 

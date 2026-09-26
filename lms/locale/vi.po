@@ -12507,3 +12507,39 @@ msgstr "Gợi ý: bắt đầu từ đâu"
 
 msgid "Show the solution"
 msgstr "Xem lời giải"
+
+msgid "Practice by lesson"
+msgstr "Luyện tập theo bài"
+
+msgid "Each lesson ends with a short practice on what you have studied so far. The recheck opens a few days after the last one."
+msgstr "Cuối mỗi bài có phần luyện tập ngắn về những gì bạn đã học đến đó. Bài kiểm tra lại mở sau bài cuối vài ngày."
+
+msgid "Done"
+msgstr "Đã xong"
+
+msgid "In progress"
+msgstr "Đang làm"
+
+msgid "Not started"
+msgstr "Chưa bắt đầu"
+
+msgid "Practise this lesson"
+msgstr "Luyện tập bài này"
+
+msgid "Set {0} of {1}"
+msgstr "Lượt {0}/{1}"
+
+msgid "Take the baseline quiz once before practising, so the system knows where you start."
+msgstr "Làm bài kiểm tra đầu vào một lần trước khi luyện tập, để hệ thống biết bạn bắt đầu từ đâu."
+
+msgid "Short sets on what you have studied so far. After each set the system decides what you should work on next."
+msgstr "Các lượt ngắn về những gì bạn đã học đến đây. Sau mỗi lượt, hệ thống quyết định bạn nên luyện gì tiếp theo."
+
+msgid "You have finished the practice for this lesson."
+msgstr "Bạn đã xong phần luyện tập của bài này."
+
+msgid "All lessons practised. Your recheck is on the practice page."
+msgstr "Bạn đã luyện tập xong mọi bài. Bài kiểm tra lại nằm ở trang luyện tập."
+
+msgid "Practice overview"
+msgstr "Tổng quan luyện tập"

@@ -548,9 +548,7 @@ lesson_names = add_chapter(
 	[
 		(
 			title,
-			content(
-				*[para(t) for t in theory], para("Luyện tập: mở trang Luyện tập CogniLearn của khóa học.")
-			),
+			content(*[para(t) for t in theory]),
 		)
 		for title, theory, _ in LESSONS
 	],

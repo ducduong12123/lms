@@ -182,29 +182,38 @@ def study_status(course: str) -> dict:
 	return {**view, "course_title": frappe.db.get_value("LMS Course", course, "title")}
 
 
+@frappe.whitelist()
+def lesson_practice(course: str, lesson: str) -> dict:
+	"""The practice panel shown at the end of a lesson (nothing for courses without a study)."""
+	member = _require_login()
+	found = study.active_study(course)
+	return study.lesson_view(found, member, lesson) if found else {"study": False, "step": "none"}
+
+
 @frappe.whitelist(methods=["POST"])
-def start_practice(course: str) -> dict:
+def start_lesson_practice(course: str, lesson: str) -> dict:
 	member = _require_login()
 	found = _study(course)
 	if not study.baseline_done(found, member):
 		frappe.throw("Take the baseline quiz first.")
 	participant = study.ensure_participant(found, member)
-	if participant.status == "Practising" and not study.open_set(participant):
-		study.plan_next_set(found, participant)
-	return {
-		**study.student_view(found, member),
-		"course_title": frappe.db.get_value("LMS Course", course, "title"),
-	}
+	study.start_lesson(found, participant, lesson)
+	return study.lesson_view(found, member, lesson)
+
+
+def _set_for(course: str, question: str):
+	member = _require_login()
+	found = _study(course)
+	participant = study.ensure_participant(found, member)
+	practice_set = study.set_with_question(participant, question)
+	if not practice_set:
+		frappe.throw("This question is not in an open practice set of yours.", frappe.PermissionError)
+	return found, participant, practice_set
 
 
 @frappe.whitelist(methods=["POST"])
 def answer_practice(course: str, question: str, answer: str | list) -> dict:
-	member = _require_login()
-	found = _study(course)
-	participant = study.ensure_participant(found, member)
-	practice_set = study.open_set(participant)
-	if not practice_set:
-		frappe.throw("You have no open practice set.")
+	found, participant, practice_set = _set_for(course, question)
 	if isinstance(answer, str) and answer.startswith("["):
 		answer = json.loads(answer)
 	return study.answer_practice(found, participant, practice_set, question, answer)
@@ -213,12 +222,7 @@ def answer_practice(course: str, question: str, answer: str | list) -> dict:
 @frappe.whitelist(methods=["POST"])
 def request_hint(course: str, question: str) -> dict:
 	"""Next rung of the help ladder for one question of the learner's open set."""
-	member = _require_login()
-	found = _study(course)
-	participant = study.ensure_participant(found, member)
-	practice_set = study.open_set(participant)
-	if not practice_set:
-		frappe.throw("You have no open practice set.")
+	found, participant, practice_set = _set_for(course, question)
 	return study.request_hint(found, participant, practice_set, question)
 
 

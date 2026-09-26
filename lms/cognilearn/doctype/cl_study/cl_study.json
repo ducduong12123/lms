@@ -59,13 +59,14 @@
    "fieldname": "set_size",
    "fieldtype": "Int",
    "label": "Questions per Practice Set",
-   "default": "4"
+   "default": "3"
   },
   {
    "fieldname": "budget_sets",
    "fieldtype": "Int",
-   "label": "Practice Sets per Learner",
-   "default": "3"
+   "label": "Sets per Lesson",
+   "default": "2",
+   "description": "Every lesson with practice gets this many sets, in both arms. The recheck is scheduled after the last lesson."
   },
   {
    "fieldname": "recheck_delay_hours",
@@ -88,7 +89,7 @@
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-09-26 09:00:00.000000",
+ "modified": "2026-09-26 16:00:00.000000",
  "modified_by": "Administrator",
  "module": "CogniLearn",
  "name": "CL Study",

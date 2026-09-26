@@ -3,6 +3,10 @@
 Evidence comes from two places: every native LMS quiz submission (baseline, lesson quizzes,
 the delayed recheck) and the adaptive practice sets. Both are LMS Questions, so any course
 whose questions the knowledge mapper linked to KCs can run the study.
+
+Practice is paced by lessons: each lesson with practice questions ends with its own sets, and
+the pool is limited to what the learner has studied so far (that lesson and the ones before it).
+Both arms get the same number of sets per lesson; they differ only in how questions are chosen.
 """
 
 from __future__ import annotations
@@ -108,6 +112,48 @@ def practice_pool(study) -> list[str]:
 	held_out = set(quiz_questions(study.baseline_quiz)) | set(quiz_questions(study.recheck_quiz))
 	excluded = set(_json(study.excluded_questions) or [])
 	return [q for q in course_questions(study.course) if q not in held_out and q not in excluded]
+
+
+def _home_lessons(questions: list[str]) -> dict[str, str]:
+	"""Question -> the lesson whose quiz holds it (question banks are linked to their lesson)."""
+	home: dict[str, str] = {}
+	if not questions:
+		return home
+	for row in frappe.get_all(
+		"LMS Quiz Question", filters={"question": ["in", questions]}, fields=["question", "parent"]
+	):
+		lesson = frappe.db.get_value("LMS Quiz", row.parent, "lesson")
+		if lesson:
+			home.setdefault(row.question, lesson)
+	return home
+
+
+def practice_lessons(study) -> list[str]:
+	"""Lessons, in course order, that end with practice (they hold at least one pool question)."""
+	homes = set(_home_lessons(practice_pool(study)).values())
+	return [row["id"] for row in _ordered_lessons(study.course) if row["id"] in homes]
+
+
+def lesson_pool(study, lesson: str) -> list[str]:
+	"""What a learner at ``lesson`` may practise: its own questions first, then earlier lessons'."""
+	order = [row["id"] for row in _ordered_lessons(study.course)]
+	if lesson not in order:
+		return []
+	studied = set(order[: order.index(lesson) + 1])
+	pool = practice_pool(study)
+	homes = _home_lessons(pool)
+	own = [q for q in pool if homes.get(q) == lesson]
+	earlier = [q for q in pool if homes.get(q) in studied and homes.get(q) != lesson]
+	return own + earlier
+
+
+def lesson_done(participant, lesson: str) -> bool:
+	return bool(
+		frappe.db.exists(
+			"CL Practice Set",
+			{"participant": participant.name, "lesson": lesson, "status": "Done", "closes_lesson": 1},
+		)
+	)
 
 
 # ---- evidence --------------------------------------------------------------------------------
@@ -265,9 +311,24 @@ def baseline_done(study, member: str) -> bool:
 	return bool(frappe.db.exists("LMS Quiz Submission", {"quiz": study.baseline_quiz, "member": member}))
 
 
-def open_set(participant):
-	name = frappe.db.get_value("CL Practice Set", {"participant": participant.name, "status": "Open"})
+def open_set(participant, lesson: str | None = None):
+	filters = {"participant": participant.name, "status": "Open"}
+	if lesson:
+		filters["lesson"] = lesson
+	name = frappe.db.get_value("CL Practice Set", filters)
 	return frappe.get_doc("CL Practice Set", name) if name else None
+
+
+def set_with_question(participant, question: str):
+	"""The learner's open set that holds ``question`` (a learner may have one open set per lesson)."""
+	for row in frappe.get_all(
+		"CL Practice Set",
+		filters={"participant": participant.name, "status": "Open"},
+		fields=["name", "questions"],
+	):
+		if question in (_json(row.questions) or []):
+			return frappe.get_doc("CL Practice Set", row.name)
+	return None
 
 
 def _practice_history(member: str, course: str) -> dict[str, bool]:
@@ -285,24 +346,32 @@ def _practice_history(member: str, course: str) -> dict[str, bool]:
 def plan_next_set(
 	study,
 	participant,
+	lesson: str,
 	*,
 	focus_kc: str | None = None,
 	regress_from: str | None = None,
 	trigger: dict | None = None,
 ):
-	"""Diagnose (agentic only), pick the next set, and log the decision before the learner sees it."""
+	"""Diagnose (agentic only), pick the next set of ``lesson``, and log the decision before the
+	learner sees it. Diagnosis only sees the concepts of lessons studied so far."""
 	condition = Condition(participant.condition)
 	graph = course_graph(study.course)
 	state = course_state(study.course, graph["q_matrix"])
 	half_life = float(repository.settings().half_life_days or elo.DEFAULT_HALF_LIFE_DAYS)
 	mastery = adaptive.mastery_view(state.learner(participant.member), now_datetime(), half_life)
+	pool = lesson_pool(study, lesson)
+	scope = {kc for q in pool for kc in graph["q_matrix"].get(q, [])}
 	diagnosis = None
 	if condition == Condition.AGENTIC:
-		if focus_kc:
+		if focus_kc in scope:
 			diagnosis = adaptive.GraphDiagnosis(focus_kc, focus_kc, [], [], "continue")
 		else:
-			diagnosis = adaptive.diagnose(mastery, graph["edges"], graph["order"], regress_from=regress_from)
-	pool = practice_pool(study)
+			diagnosis = adaptive.diagnose(
+				{kc: row for kc, row in mastery.items() if kc in scope},
+				[(a, b) for a, b in graph["edges"] if a in scope and b in scope],
+				[kc for kc in graph["order"] if kc in scope],
+				regress_from=regress_from if regress_from in scope else None,
+			)
 	history = _practice_history(participant.member, study.course)
 	selection = adaptive.select_items(
 		condition,
@@ -316,7 +385,7 @@ def plan_next_set(
 	)
 	if not selection.questions:
 		return None
-	set_index = frappe.db.count("CL Practice Set", {"participant": participant.name}) + 1
+	set_index = frappe.db.count("CL Practice Set", {"participant": participant.name, "lesson": lesson}) + 1
 	reason = _plan_reason(condition, diagnosis, graph["labels"])
 	decision = _log(
 		participant,
@@ -327,6 +396,7 @@ def plan_next_set(
 		diagnosis=diagnosis.to_dict() if diagnosis else None,
 		candidates=selection.candidates,
 		chosen={
+			"lesson": lesson,
 			"questions": selection.questions,
 			"focus_kc": diagnosis.focus_kc if diagnosis else None,
 			"trigger": trigger,
@@ -338,6 +408,7 @@ def plan_next_set(
 			"participant": participant.name,
 			"member": participant.member,
 			"course": study.course,
+			"lesson": lesson,
 			"set_index": set_index,
 			"focus_kc": diagnosis.focus_kc if diagnosis else None,
 			"questions": json.dumps(selection.questions),
@@ -349,7 +420,7 @@ def plan_next_set(
 
 def _plan_reason(condition: Condition, diagnosis, labels: dict[str, str]) -> str:
 	if condition == Condition.FIXED or diagnosis is None:
-		return "Các câu tiếp theo theo thứ tự của khóa học."
+		return "Các câu luyện tập của bài này, theo thứ tự."
 	focus = labels.get(diagnosis.focus_kc, diagnosis.focus_kc)
 	if diagnosis.reason == "gap":
 		target = labels.get(diagnosis.target_kc, diagnosis.target_kc)
@@ -567,20 +638,35 @@ def answer_practice(study, participant, practice_set, question: str, answer: Any
 
 def _close_set(study, participant, practice_set, results: list[bool], graph) -> dict[str, Any]:
 	condition = Condition(participant.condition)
-	sets_done = frappe.db.count("CL Practice Set", {"participant": participant.name, "status": "Done"}) + 1
-	pool_left = len(
-		[q for q in practice_pool(study) if q not in _practice_history(participant.member, study.course)]
+	lesson = practice_set.lesson
+	sets_done = (
+		frappe.db.count(
+			"CL Practice Set", {"participant": participant.name, "lesson": lesson, "status": "Done"}
+		)
+		+ 1
+	)
+	history = _practice_history(participant.member, study.course)
+	pool_left = len([q for q in lesson_pool(study, lesson) if q not in history])
+	more_lessons = any(
+		other != lesson and not lesson_done(participant, other) for other in practice_lessons(study)
 	)
 	decision = adaptive.replan(
 		condition,
 		set_results=results,
 		sets_done=sets_done,
-		budget_sets=int(study.budget_sets or 3),
+		budget_sets=int(study.budget_sets or 2),
 		pool_left=pool_left,
 		focus_label=graph["labels"].get(practice_set.focus_kc),
+		more_lessons=more_lessons,
 	)
 	frappe.db.set_value(
-		"CL Practice Set", practice_set.name, {"status": "Done", "accuracy": decision.set_accuracy}
+		"CL Practice Set",
+		practice_set.name,
+		{
+			"status": "Done",
+			"accuracy": decision.set_accuracy,
+			"closes_lesson": int(decision.action in ("lesson_done", "schedule_recheck")),
+		},
 	)
 	_log(
 		participant,
@@ -589,30 +675,49 @@ def _close_set(study, participant, practice_set, results: list[bool], graph) -> 
 		reason=decision.reason_for_student,
 		chosen={
 			"practice_set": practice_set.name,
+			"lesson": lesson,
 			"set_accuracy": decision.set_accuracy,
 			"focus_kc": practice_set.focus_kc,
 		},
 	)
 	trigger = {"replan": decision.action, "after_set": practice_set.name}
 	if decision.action == "schedule_recheck":
-		due = add_to_date(now_datetime(), hours=int(study.recheck_delay_hours or 72))
-		frappe.db.set_value(
-			"CL Study Participant", participant.name, {"status": "Recheck Scheduled", "recheck_due_at": due}
-		)
-		_log(
-			participant,
-			kind="recheck",
-			action="scheduled",
-			reason=decision.reason_for_student,
-			chosen={"due_at": str(due), "quiz": study.recheck_quiz},
-		)
-	elif decision.action == "continue" and condition == Condition.AGENTIC:
-		plan_next_set(study, participant, focus_kc=practice_set.focus_kc, trigger=trigger)
-	elif decision.action == "regress":
-		plan_next_set(study, participant, regress_from=practice_set.focus_kc, trigger=trigger)
-	else:
-		plan_next_set(study, participant, trigger=trigger)
+		_schedule_recheck(study, participant, decision.reason_for_student)
+	elif decision.action != "lesson_done":
+		kwargs: dict[str, Any] = {"trigger": trigger}
+		if decision.action == "continue" and condition == Condition.AGENTIC:
+			kwargs["focus_kc"] = practice_set.focus_kc
+		elif decision.action == "regress":
+			kwargs["regress_from"] = practice_set.focus_kc
+		if not plan_next_set(study, participant, lesson, **kwargs):
+			# Nothing left to practise here: the lesson ends early.
+			frappe.db.set_value("CL Practice Set", practice_set.name, "closes_lesson", 1)
+			if not more_lessons:
+				_schedule_recheck(study, participant, "Bạn đã xong phần luyện tập.")
 	return decision.to_dict()
+
+
+def _schedule_recheck(study, participant, reason: str) -> None:
+	due = add_to_date(now_datetime(), hours=int(study.recheck_delay_hours or 72))
+	frappe.db.set_value(
+		"CL Study Participant", participant.name, {"status": "Recheck Scheduled", "recheck_due_at": due}
+	)
+	_log(
+		participant,
+		kind="recheck",
+		action="scheduled",
+		reason=reason,
+		chosen={"due_at": str(due), "quiz": study.recheck_quiz},
+	)
+
+
+def start_lesson(study, participant, lesson: str):
+	"""Open the lesson's practice if it has any left; returns the open set or None."""
+	if lesson not in practice_lessons(study) or lesson_done(participant, lesson):
+		return None
+	if participant.status != "Practising":
+		return None
+	return open_set(participant, lesson) or plan_next_set(study, participant, lesson)
 
 
 # ---- recheck scheduler -----------------------------------------------------------------------
@@ -698,27 +803,58 @@ def public_question(name: str) -> dict[str, Any]:
 	}
 
 
-def student_view(study, member: str) -> dict[str, Any]:
-	"""What the learner sees. The study condition is never sent (blinding)."""
+def _study_step(study, member: str) -> tuple[dict[str, Any], Any]:
+	"""Steps that do not depend on the lesson. Returns (view, participant or None)."""
 	view: dict[str, Any] = {
 		"study": True,
 		"baseline_quiz": study.baseline_quiz,
 		"recheck_quiz": study.recheck_quiz,
 	}
 	if not baseline_done(study, member):
-		return {**view, "step": "baseline"}
+		return {**view, "step": "baseline"}, None
 	participant = _participant(study, member)
-	if not participant:
-		return {**view, "step": "start"}
-	if participant.status == "Complete":
-		return {**view, "step": "complete"}
-	if participant.status in ("Recheck Scheduled", "Recheck Due"):
+	if participant and participant.status == "Complete":
+		return {**view, "step": "complete"}, participant
+	if participant and participant.status in ("Recheck Scheduled", "Recheck Due"):
 		return {
 			**view,
 			"step": "recheck" if recheck_open(participant) else "waiting",
 			"recheck_due_at": participant.recheck_due_at,
-		}
-	practice_set = open_set(participant)
+		}, participant
+	return view, participant
+
+
+def student_view(study, member: str) -> dict[str, Any]:
+	"""Course-level view: the baseline, then every lesson's practice status, then the recheck.
+	The study condition is never sent (blinding)."""
+	view, participant = _study_step(study, member)
+	positions = hints._lesson_positions(study.course)
+	lessons = []
+	for lesson in practice_lessons(study):
+		if participant and lesson_done(participant, lesson):
+			status = "done"
+		elif participant and open_set(participant, lesson):
+			status = "open"
+		else:
+			status = "todo"
+		lessons.append({**positions.get(lesson, {"lesson": lesson}), "status": status})
+	view["lessons"] = lessons
+	view.setdefault("step", "lessons")
+	return view
+
+
+def lesson_view(study, member: str, lesson: str) -> dict[str, Any]:
+	"""The practice panel at the end of a lesson."""
+	if lesson not in practice_lessons(study):
+		return {"study": True, "step": "none"}
+	view, participant = _study_step(study, member)
+	view["budget_sets"] = int(study.budget_sets or 2)
+	if participant and lesson_done(participant, lesson):
+		# The recheck and completion steps are shown on the course practice page, not per lesson.
+		return {**view, "step": "done", "later": view.get("step")}
+	if "step" in view:
+		return view
+	practice_set = open_set(participant, lesson) if participant else None
 	if not practice_set:
 		return {**view, "step": "start"}
 	questions = _json(practice_set.questions) or []
@@ -729,18 +865,31 @@ def student_view(study, member: str) -> dict[str, Any]:
 		if practice_set.decision
 		else None
 	)
-	last_replan = frappe.get_all(
-		"CL Decision Log",
-		filters={"participant": participant.name, "kind": "replan"},
-		fields=["action", "reason"],
+	previous = frappe.get_all(
+		"CL Practice Set",
+		filters={"participant": participant.name, "lesson": lesson, "status": "Done"},
+		fields=["name"],
 		order_by="creation desc",
 		limit=1,
+	)
+	last_replan = (
+		frappe.get_all(
+			"CL Decision Log",
+			filters={
+				"participant": participant.name,
+				"kind": "replan",
+				"chosen": ["like", f"%{previous[0].name}%"],
+			},
+			fields=["action", "reason"],
+			limit=1,
+		)
+		if previous
+		else []
 	)
 	return {
 		**view,
 		"step": "practice",
 		"set_index": practice_set.set_index,
-		"budget_sets": int(study.budget_sets or 3),
 		"reason": reason,
 		"last_replan": last_replan[0] if last_replan else None,
 		"questions": [public_question(q) for q in questions],

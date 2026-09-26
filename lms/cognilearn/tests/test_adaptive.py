@@ -179,6 +179,22 @@ class Replanning(unittest.TestCase):
 		self.assertEqual(action([False] * 4, Condition.FIXED), "continue")
 		self.assertEqual(action([True] * 4, done=3), "schedule_recheck")
 
+	def test_a_lesson_ends_before_the_recheck_while_lessons_remain(self):
+		def action(done, pool_left=5, more=True):
+			return adaptive.replan(
+				Condition.AGENTIC,
+				set_results=[True],
+				sets_done=done,
+				budget_sets=2,
+				pool_left=pool_left,
+				more_lessons=more,
+			).action
+
+		self.assertEqual(action(1), "advance")
+		self.assertEqual(action(2), "lesson_done")
+		self.assertEqual(action(1, pool_left=0), "lesson_done")
+		self.assertEqual(action(2, more=False), "schedule_recheck")
+
 	def test_empty_pool_ends_practice(self):
 		self.assertEqual(
 			adaptive.replan(

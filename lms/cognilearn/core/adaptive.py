@@ -21,7 +21,7 @@ from lms.cognilearn.core import bkt, elo
 from lms.cognilearn.core.contracts import Condition
 from lms.cognilearn.core.judge import ask_safely, noul
 
-ADAPTIVE_VERSION = "graph_adaptive_policy_v3"
+ADAPTIVE_VERSION = "graph_adaptive_policy_v4_lesson_paced"
 # On the Elo scale one independent answer moves a KC only ~2 points from 50%, so absolute
 # "mastered" thresholds (70%) cannot be reached inside a pilot session. Diagnosis instead reads
 # the sign of the evidence: below 50% = more failure than success, 55%+ = clearly positive.
@@ -282,7 +282,7 @@ def select_items(
 
 @dataclass
 class Replan:
-	action: str  # advance | continue | regress | schedule_recheck
+	action: str  # advance | continue | regress | lesson_done | schedule_recheck
 	reason_for_student: str
 	set_accuracy: float | None
 	policy_version: str = ADAPTIVE_VERSION
@@ -299,23 +299,30 @@ def replan(
 	budget_sets: int,
 	pool_left: int,
 	focus_label: str | None = None,
+	more_lessons: bool = False,
 ) -> Replan:
+	"""After a set: ``sets_done``/``budget_sets`` count the sets of the current lesson. When the
+	lesson's budget (or its pool) runs out, the learner moves on to the next lesson, or, if every
+	lesson with practice is done, the delayed recheck is scheduled."""
 	accuracy = round(sum(set_results) / len(set_results), 3) if set_results else None
 	if sets_done >= budget_sets or pool_left == 0:
+		if more_lessons:
+			return Replan(
+				"lesson_done",
+				"Bạn đã xong phần luyện tập của bài này. Học bài tiếp theo rồi luyện tiếp nhé.",
+				accuracy,
+			)
 		return Replan(
 			"schedule_recheck",
-			"Bạn đã xong phần luyện tập hôm nay. Hệ thống hẹn bài kiểm tra lại sau khoảng ba ngày.",
+			"Bạn đã xong phần luyện tập. Hệ thống hẹn bài kiểm tra lại sau khoảng ba ngày.",
 			accuracy,
 		)
 	if condition == Condition.FIXED:
-		return Replan("continue", "Tiếp tục với các câu tiếp theo của khóa học.", accuracy)
+		return Replan("continue", "Tiếp tục với các câu luyện tập tiếp theo của bài.", accuracy)
 	topic = f" về {focus_label}" if focus_label else ""
 	if accuracy is not None and accuracy >= ADVANCE_AT:
-		return Replan(
-			"advance",
-			f"Bạn đã làm chắc phần{topic}. Hệ thống chuyển sang phần bạn còn yếu tiếp theo.",
-			accuracy,
-		)
+		done = f"Bạn đã làm chắc phần{topic}." if focus_label else "Bạn làm tốt lượt này."
+		return Replan("advance", f"{done} Hệ thống chuyển sang phần bạn còn yếu tiếp theo.", accuracy)
 	if accuracy is not None and accuracy < REGRESS_BELOW:
 		return Replan(
 			"regress",

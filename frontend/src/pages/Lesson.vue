@@ -261,6 +261,14 @@
 								:quizId="lesson.data.quiz_id"
 							/>
 						</div>
+						<!-- CogniLearn: practice on what was studied so far (only in courses with a study) -->
+						<LessonPractice
+							v-if="user.data && lesson.data.name && !lesson.data.no_preview && !lesson.data.locked"
+							:key="`practice-${lesson.data.name}`"
+							:courseName="courseName"
+							:lesson="lesson.data.name"
+							class="mt-10"
+						/>
 					</div>
 					<div
 						v-if="lesson.data && (allowDiscussions || tabs.length > 1)"
@@ -406,6 +414,7 @@ import { parseStoredEditorJs } from '@/utils/lessonForm'
 import { getLmsRoute } from '@/utils/basePath'
 import { provideStudentView } from '@/composables/useStudentView'
 import TutorPanel from '@/components/Copilot/TutorPanel.vue'
+import LessonPractice from '@/components/CogniLearn/LessonPractice.vue'
 
 const router = useRouter()
 const route = useRoute()

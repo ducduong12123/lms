@@ -8,11 +8,13 @@
   "participant",
   "member",
   "course",
+  "lesson",
   "set_index",
   "focus_kc",
   "questions",
   "item_states",
   "status",
+  "closes_lesson",
   "accuracy",
   "decision"
  ],
@@ -38,6 +40,14 @@
    "fieldtype": "Link",
    "label": "Course",
    "options": "LMS Course"
+  },
+  {
+   "fieldname": "lesson",
+   "fieldtype": "Link",
+   "label": "Lesson",
+   "options": "Course Lesson",
+   "in_list_view": 1,
+   "in_standard_filter": 1
   },
   {
    "fieldname": "set_index",
@@ -72,6 +82,13 @@
    "in_list_view": 1
   },
   {
+   "fieldname": "closes_lesson",
+   "fieldtype": "Check",
+   "label": "Closes Lesson",
+   "default": "0",
+   "description": "This set ended the lesson's practice (budget or pool used up)."
+  },
+  {
    "fieldname": "accuracy",
    "fieldtype": "Float",
    "label": "Accuracy"
@@ -85,7 +102,7 @@
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-09-26 15:00:00.000000",
+ "modified": "2026-09-26 16:00:00.000000",
  "modified_by": "Administrator",
  "module": "CogniLearn",
  "name": "CL Practice Set",
