@@ -52,11 +52,18 @@ def _last_content_hash(course: str) -> str | None:
 
 def map_course(course: str, force: bool = False) -> str | None:
 	snapshot = repository.course_snapshot(course)
-	content_hash = hashlib.sha256(json.dumps(snapshot, sort_keys=True, ensure_ascii=False).encode()).hexdigest()
+	content_hash = hashlib.sha256(
+		json.dumps(snapshot, sort_keys=True, ensure_ascii=False).encode()
+	).hexdigest()
 	if not force and content_hash == _last_content_hash(course):
 		return None  # saves that do not change lessons or questions do not re-run the LLM
 	run = frappe.get_doc(
-		{"doctype": "CL Knowledge Map Run", "course": course, "status": "Running", "mapper_version": MAPPER_VERSION}
+		{
+			"doctype": "CL Knowledge Map Run",
+			"course": course,
+			"status": "Running",
+			"mapper_version": MAPPER_VERSION,
+		}
 	).insert(ignore_permissions=True)
 	frappe.db.commit()
 	try:
@@ -78,7 +85,9 @@ def map_course(course: str, force: bool = False) -> str | None:
 				"judge_source": result.judge_source,
 				"llm_model": llm.model,
 				"automatic_share": summary["automatic_share"] * 100,
-				"summary": json.dumps({**summary, "content_hash": content_hash, "finished_at": str(now_datetime())}),
+				"summary": json.dumps(
+					{**summary, "content_hash": content_hash, "finished_at": str(now_datetime())}
+				),
 				"result": json.dumps(result.to_dict(), ensure_ascii=False),
 			}
 		)

@@ -99,13 +99,19 @@ def apply_attempt(
 		if mode == "independent":
 			state.last_independent_at = at
 		surprise += outcome - probability
-		records.append(UpdateRecord(concept, round(probability, 4), round(per_concept, 4), round(before, 2), round(state.elo, 2)))
+		records.append(
+			UpdateRecord(
+				concept, round(probability, 4), round(per_concept, 4), round(before, 2), round(state.elo, 2)
+			)
+		)
 	if not freeze_item and concepts:
 		item_ratings[item_code] = item_elo - ITEM_K_FACTOR * weight * surprise / len(concepts)
 	return records
 
 
-def decayed_mastery(state: ConceptState, now: datetime, half_life_days: float = DEFAULT_HALF_LIFE_DAYS) -> float:
+def decayed_mastery(
+	state: ConceptState, now: datetime, half_life_days: float = DEFAULT_HALF_LIFE_DAYS
+) -> float:
 	"""Mastery used for decisions: drifts back toward the prior (50%) without fresh independent evidence."""
 	raw = mastery_percent(state.elo)
 	if state.last_independent_at is None or half_life_days <= 0:
@@ -121,7 +127,12 @@ def state_label(state: ConceptState, mastery: float) -> str:
 	recent_quality = sum(w for _, w in recent) / len(recent) if recent else 0.0
 	if mastery >= 70.0 and state.confidence >= 0.5 and recent_quality >= 0.5:
 		return "UNLOCKED"
-	if recent_accuracy is not None and recent_accuracy >= 0.8 and len(recent) >= RECENT_WINDOW and recent_quality >= 0.5:
+	if (
+		recent_accuracy is not None
+		and recent_accuracy >= 0.8
+		and len(recent) >= RECENT_WINDOW
+		and recent_quality >= 0.5
+	):
 		return "UNLOCKED_BY_MOMENTUM"
 	if state.attempts >= 8 and recent_accuracy is not None and recent_accuracy < 0.4:
 		return "HARD_BLOCKED"
@@ -130,7 +141,9 @@ def state_label(state: ConceptState, mastery: float) -> str:
 	return "LOCKED_NEEDS_PRACTICE"
 
 
-def replay(evidence: list[dict], *, freeze_items: bool = True) -> tuple[dict[str, ConceptState], dict[str, float]]:
+def replay(
+	evidence: list[dict], *, freeze_items: bool = True
+) -> tuple[dict[str, ConceptState], dict[str, float]]:
 	"""Recompute the learner model from evidence rows ordered by time."""
 	states: dict[str, ConceptState] = {}
 	ratings: dict[str, float] = {}

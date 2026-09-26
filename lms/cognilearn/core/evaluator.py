@@ -27,7 +27,9 @@ def _compact(value: Any) -> str:
 
 
 def _statements(answer: str) -> tuple[str, ...]:
-	return tuple(part for part in (_compact(piece) for piece in re.split(r"[;\n]", str(answer or ""))) if part)
+	return tuple(
+		part for part in (_compact(piece) for piece in re.split(r"[;\n]", str(answer or ""))) if part
+	)
 
 
 def _response_text(item: dict[str, Any], response: Any) -> str:

@@ -73,7 +73,9 @@ def order_items(
 	gap_rank = {code: index for index, code in enumerate(diagnosis.prerequisite_gaps)}
 
 	def rank(item):
-		matched = [misconception_rank[c] for c in item.get("misconception_codes") or [] if c in misconception_rank]
+		matched = [
+			misconception_rank[c] for c in item.get("misconception_codes") or [] if c in misconception_rank
+		]
 		gaps = [gap_rank[t] for t in item.get("prerequisites") or [] if t in gap_rank]
 		return (
 			min(matched, default=99),
@@ -87,7 +89,9 @@ def order_items(
 
 def build_plan(condition: Condition, diagnosis: Diagnosis, items: Sequence[dict[str, Any]]) -> Plan:
 	def codes(stage):
-		return [item["code"] for item in order_items(items, stage=stage, condition=condition, diagnosis=diagnosis)]
+		return [
+			item["code"] for item in order_items(items, stage=stage, condition=condition, diagnosis=diagnosis)
+		]
 
 	agentic = condition == Condition.AGENTIC
 	return Plan(
@@ -119,18 +123,36 @@ def build_replan(
 	evidence = [str(row.get("item_code")) for row in rows if row.get("item_code")][-8:]
 
 	if condition == Condition.FIXED:
-		action, reason = "schedule_recheck", "Phần luyện tập đã xong; hệ thống hẹn bài kiểm tra lại sau khoảng ba ngày."
+		action, reason = (
+			"schedule_recheck",
+			"Phần luyện tập đã xong; hệ thống hẹn bài kiểm tra lại sau khoảng ba ngày.",
+		)
 	elif checkpoint_accuracy is not None:
 		if checkpoint_accuracy >= CHECKPOINT_PROMOTE:
-			action, reason = "schedule_recheck", "Checkpoint đã đạt ngưỡng; hệ thống hẹn bài kiểm tra lại sau khoảng ba ngày."
+			action, reason = (
+				"schedule_recheck",
+				"Checkpoint đã đạt ngưỡng; hệ thống hẹn bài kiểm tra lại sau khoảng ba ngày.",
+			)
 		elif checkpoint_accuracy < CHECKPOINT_REGRESS:
-			action, reason = "regress", "Checkpoint còn nhiều lỗi; hãy quay lại sơ đồ và liên kết successor trước."
+			action, reason = (
+				"regress",
+				"Checkpoint còn nhiều lỗi; hãy quay lại sơ đồ và liên kết successor trước.",
+			)
 		else:
-			action, reason = "continue", "Bạn đã tiến bộ nhưng chưa ổn định; hãy xem lại một lần trước khi kiểm tra lại."
+			action, reason = (
+				"continue",
+				"Bạn đã tiến bộ nhưng chưa ổn định; hãy xem lại một lần trước khi kiểm tra lại.",
+			)
 	elif guided_accuracy is not None and guided_accuracy < GUIDED_CONTINUE:
-		action, reason = "continue_guided", "Lỗi liên kết vẫn lặp lại; hãy làm thêm một biến thể có gợi ý từng bước."
+		action, reason = (
+			"continue_guided",
+			"Lỗi liên kết vẫn lặp lại; hãy làm thêm một biến thể có gợi ý từng bước.",
+		)
 	else:
-		action, reason = "move_to_checkpoint", "Bạn đã có đủ tín hiệu luyện tập; hãy thử checkpoint mới không có gợi ý."
+		action, reason = (
+			"move_to_checkpoint",
+			"Bạn đã có đủ tín hiệu luyện tập; hãy thử checkpoint mới không có gợi ý.",
+		)
 
 	return ReplanDecision(
 		next_action=action,

@@ -1,6 +1,6 @@
 """Core tests. Plain unittest, no Frappe site needed:
 
-    python -m unittest lms.cognilearn.tests.test_core
+python -m unittest lms.cognilearn.tests.test_core
 """
 
 from __future__ import annotations
@@ -31,7 +31,9 @@ class CoreIsPlatformIndependent(unittest.TestCase):
 				elif isinstance(node, ast.ImportFrom):
 					names = [node.module or ""]
 				for name in names:
-					self.assertFalse(name == "frappe" or name.startswith("frappe."), f"{path.name} imports {name}")
+					self.assertFalse(
+						name == "frappe" or name.startswith("frappe."), f"{path.name} imports {name}"
+					)
 
 
 class ContentAndEvaluator(unittest.TestCase):
@@ -61,7 +63,9 @@ class ContentAndEvaluator(unittest.TestCase):
 		self.assertTrue(evaluator.evaluate(ordered, ["B", "A"]).is_correct)
 		self.assertFalse(evaluator.evaluate(ordered, ["A", "B"]).is_correct)
 		self.assertFalse(evaluator.evaluate(ordered, "node_k->next = new_node").is_correct)
-		self.assertTrue(evaluator.evaluate(ordered, "new_node->next = node_k->next;\nnode_k->next = new_node;").is_correct)
+		self.assertTrue(
+			evaluator.evaluate(ordered, "new_node->next = node_k->next;\nnode_k->next = new_node;").is_correct
+		)
 
 	def test_hint_ladder_stays_on_last_level(self):
 		item = BY_CODE["SLL-PILOT-G-01"]
@@ -79,9 +83,22 @@ class EloModel(unittest.TestCase):
 	def test_worked_example_from_explainer(self):
 		# Learner 1000 vs hard item 1100: E = 0.36; independent correct +20.5, guided +7.2, wrong -11.5.
 		self.assertAlmostEqual(elo.expected(1000, 1100), 0.36, places=2)
-		for mode, correct, delta in (("independent", True, 20.5), ("guided", True, 7.2), ("independent", False, -11.5)):
+		for mode, correct, delta in (
+			("independent", True, 20.5),
+			("guided", True, 7.2),
+			("independent", False, -11.5),
+		):
 			states: dict = {}
-			elo.apply_attempt(states, {}, item_code="x", difficulty="hard", concepts=["c"], correct=correct, mode=mode, at=datetime(2026, 9, 26))
+			elo.apply_attempt(
+				states,
+				{},
+				item_code="x",
+				difficulty="hard",
+				concepts=["c"],
+				correct=correct,
+				mode=mode,
+				at=datetime(2026, 9, 26),
+			)
 			self.assertAlmostEqual(states["c"].elo - 1000, delta, places=1)
 
 	def test_guided_weight_is_capped(self):
@@ -91,14 +108,32 @@ class EloModel(unittest.TestCase):
 
 	def test_q_mask_splits_weight(self):
 		states: dict = {}
-		elo.apply_attempt(states, {}, item_code="x", difficulty="medium", concepts=["a", "b"], correct=True, mode="independent", at=datetime(2026, 9, 26))
+		elo.apply_attempt(
+			states,
+			{},
+			item_code="x",
+			difficulty="medium",
+			concepts=["a", "b"],
+			correct=True,
+			mode="independent",
+			at=datetime(2026, 9, 26),
+		)
 		self.assertAlmostEqual(states["a"].weight_sum, 1 / 2**0.5, places=4)
 
 	def test_decay_moves_toward_prior(self):
 		states: dict = {}
 		start = datetime(2026, 9, 1)
 		for _ in range(6):
-			elo.apply_attempt(states, {}, item_code="x", difficulty="hard", concepts=["c"], correct=True, mode="independent", at=start)
+			elo.apply_attempt(
+				states,
+				{},
+				item_code="x",
+				difficulty="hard",
+				concepts=["c"],
+				correct=True,
+				mode="independent",
+				at=start,
+			)
 		fresh = elo.decayed_mastery(states["c"], start)
 		later = elo.decayed_mastery(states["c"], start + timedelta(days=14))
 		self.assertGreater(fresh, later)
@@ -106,8 +141,22 @@ class EloModel(unittest.TestCase):
 
 	def test_replay_is_order_independent_of_input_order(self):
 		rows = [
-			{"item_code": "a", "difficulty": "easy", "concepts": ["c"], "correct": True, "mode": "independent", "at": datetime(2026, 9, 1)},
-			{"item_code": "b", "difficulty": "hard", "concepts": ["c"], "correct": False, "mode": "guided", "at": datetime(2026, 9, 2)},
+			{
+				"item_code": "a",
+				"difficulty": "easy",
+				"concepts": ["c"],
+				"correct": True,
+				"mode": "independent",
+				"at": datetime(2026, 9, 1),
+			},
+			{
+				"item_code": "b",
+				"difficulty": "hard",
+				"concepts": ["c"],
+				"correct": False,
+				"mode": "guided",
+				"at": datetime(2026, 9, 2),
+			},
 		]
 		first, _ = elo.replay(rows)
 		second, _ = elo.replay(list(reversed(rows)))
@@ -122,7 +171,14 @@ class Policy(unittest.TestCase):
 
 	def test_agentic_orders_by_observed_misconception(self):
 		diagnosis = policy.build_diagnosis(
-			[{"item_code": "SLL-PILOT-B-03", "correct": False, "misconception_code": "wrong_k_boundary", "prerequisites": ["traversal_counting"]}]
+			[
+				{
+					"item_code": "SLL-PILOT-B-03",
+					"correct": False,
+					"misconception_code": "wrong_k_boundary",
+					"prerequisites": ["traversal_counting"],
+				}
+			]
 		)
 		agentic = policy.build_plan(Condition.AGENTIC, diagnosis, ITEMS)
 		fixed = policy.build_plan(Condition.FIXED, diagnosis, ITEMS)
@@ -136,7 +192,9 @@ class Policy(unittest.TestCase):
 		self.assertEqual(policy.build_replan(Condition.AGENTIC, [], 0.5).next_action, "continue")
 		guided_wrong = [{"item_code": "g", "mode": "guided", "correct": False}]
 		self.assertEqual(policy.build_replan(Condition.AGENTIC, guided_wrong).next_action, "continue_guided")
-		self.assertEqual(policy.build_replan(Condition.FIXED, guided_wrong, 0.0).next_action, "schedule_recheck")
+		self.assertEqual(
+			policy.build_replan(Condition.FIXED, guided_wrong, 0.0).next_action, "schedule_recheck"
+		)
 
 
 class FakeLLM:
@@ -157,7 +215,9 @@ class FakeJev(JevJudge):
 
 	def _post(self, url, payload, headers, timeout):
 		self.requests += 1
-		answers = {key: {"type": "noul", "noul": self.decide(payload["state"], key)} for key in payload["questions"]}
+		answers = {
+			key: {"type": "noul", "noul": self.decide(payload["state"], key)} for key in payload["questions"]
+		}
 		return {"answers": answers}
 
 
@@ -165,21 +225,52 @@ COURSE = {
 	"name": "dslk",
 	"title": "Danh sách liên kết",
 	"lessons": [
-		{"id": "L1", "title": "Node", "text": "...", "questions": [{"id": "Q1", "text": "Node gồm những trường nào?"}]},
+		{
+			"id": "L1",
+			"title": "Node",
+			"text": "...",
+			"questions": [{"id": "Q1", "text": "Node gồm những trường nào?"}],
+		},
 		{"id": "L2", "title": "Chèn", "text": "...", "questions": [{"id": "Q2", "text": "Chèn sau k"}]},
 	],
 }
 CATALOGUE = [
-	{"key": "node_structure", "label": "Cấu trúc node", "description": "", "prerequisites": [], "lessons": ["L1"], "questions": ["Q1"]},
-	{"key": "insert_after_k", "label": "Chèn sau k", "description": "", "prerequisites": ["node_structure"], "lessons": ["L2"], "questions": ["Q2"]},
-	{"key": "node_structure_basics", "label": "Cấu trúc node cơ bản", "description": "", "prerequisites": [], "lessons": ["L2"], "questions": []},
+	{
+		"key": "node_structure",
+		"label": "Cấu trúc node",
+		"description": "",
+		"prerequisites": [],
+		"lessons": ["L1"],
+		"questions": ["Q1"],
+	},
+	{
+		"key": "insert_after_k",
+		"label": "Chèn sau k",
+		"description": "",
+		"prerequisites": ["node_structure"],
+		"lessons": ["L2"],
+		"questions": ["Q2"],
+	},
+	{
+		"key": "node_structure_basics",
+		"label": "Cấu trúc node cơ bản",
+		"description": "",
+		"prerequisites": [],
+		"lessons": ["L2"],
+		"questions": [],
+	},
 ]
 
 
 class KnowledgeMapping(unittest.TestCase):
 	def test_slug_and_similarity(self):
 		self.assertEqual(slug("Chèn sau vị trí k"), "chen_sau_vi_tri_k")
-		self.assertGreater(similarity({"key": "node_structure", "label": "x"}, {"key": "node_structure_basics", "label": "x"}), 0.34)
+		self.assertGreater(
+			similarity(
+				{"key": "node_structure", "label": "x"}, {"key": "node_structure_basics", "label": "x"}
+			),
+			0.34,
+		)
 
 	def test_route(self):
 		self.assertEqual(route(0.9, 0.8, 0.2), "accepted")
@@ -191,7 +282,10 @@ class KnowledgeMapping(unittest.TestCase):
 		result = build_knowledge_map(COURSE, llm=None, judge=FallbackJudge(), catalogue=CATALOGUE)
 		statuses = {d["status"] for d in result.edges + result.q_matrix + result.merges}
 		self.assertEqual(statuses, {"review"})
-		self.assertIn({"question": "Q2", "kc": "insert_after_k"}, [{"question": q["question"], "kc": q["kc"]} for q in result.q_matrix])
+		self.assertIn(
+			{"question": "Q2", "kc": "insert_after_k"},
+			[{"question": q["question"], "kc": q["kc"]} for q in result.q_matrix],
+		)
 		self.assertEqual(result.summary()["automatic_share"], 0.0)
 
 	def test_jev_merges_links_and_prunes(self):
@@ -200,7 +294,12 @@ class KnowledgeMapping(unittest.TestCase):
 				return 0.93  # node_structure == node_structure_basics
 			if key == "requires":
 				return 0.9 if state["prerequisite"]["key"] == "node_structure" else 0.05
-			return 0.95 if (state["item"]["question"], key) in {("Chèn sau k", "insert_after_k"), ("Node gồm những trường nào?", "node_structure")} else 0.1
+			return (
+				0.95
+				if (state["item"]["question"], key)
+				in {("Chèn sau k", "insert_after_k"), ("Node gồm những trường nào?", "node_structure")}
+				else 0.1
+			)
 
 		judge = FakeJev(decide)
 		result = build_knowledge_map(COURSE, llm=None, judge=judge, catalogue=CATALOGUE)
@@ -213,8 +312,22 @@ class KnowledgeMapping(unittest.TestCase):
 
 	def test_cycles_are_broken(self):
 		catalogue = [
-			{"key": "a", "label": "A", "description": "", "prerequisites": ["b"], "lessons": ["L1"], "questions": []},
-			{"key": "b", "label": "B", "description": "", "prerequisites": ["a"], "lessons": ["L2"], "questions": []},
+			{
+				"key": "a",
+				"label": "A",
+				"description": "",
+				"prerequisites": ["b"],
+				"lessons": ["L1"],
+				"questions": [],
+			},
+			{
+				"key": "b",
+				"label": "B",
+				"description": "",
+				"prerequisites": ["a"],
+				"lessons": ["L2"],
+				"questions": [],
+			},
 		]
 		judge = FakeJev(lambda state, key: 0.95 if key == "requires" else 0.0)
 		result = build_knowledge_map(COURSE, llm=None, judge=judge, catalogue=catalogue)

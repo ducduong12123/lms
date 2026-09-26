@@ -40,7 +40,15 @@ def choice(instructions: str, options: dict[str, str]) -> dict[str, Any]:
 class JevJudge:
 	source = "jev"
 
-	def __init__(self, api_key: str, *, url: str = JEV_URL, model: str = JEV_MODEL, timeout: int = 30, post: Poster | None = None):
+	def __init__(
+		self,
+		api_key: str,
+		*,
+		url: str = JEV_URL,
+		model: str = JEV_MODEL,
+		timeout: int = 30,
+		post: Poster | None = None,
+	):
 		self.api_key = api_key
 		self.url = url
 		self.model = model
@@ -66,14 +74,21 @@ class FallbackJudge:
 	available = False
 
 	def ask(self, state: Any, questions: dict[str, dict[str, Any]]) -> dict[str, Judgment]:
-		return {key: Judgment(question=key, value=None, source=self.source, accepted=False) for key in questions}
+		return {
+			key: Judgment(question=key, value=None, source=self.source, accepted=False) for key in questions
+		}
 
 
 def _to_judgment(key: str, answer: dict[str, Any]) -> Judgment:
 	kind = answer.get("type")
 	if kind == "noul":
 		probability = float(answer.get("noul") or 0.0)
-		return Judgment(question=key, value=probability, probabilities={"true": probability, "false": 1 - probability}, source="jev")
+		return Judgment(
+			question=key,
+			value=probability,
+			probabilities={"true": probability, "false": 1 - probability},
+			source="jev",
+		)
 	if kind == "choice":
 		return Judgment(
 			question=key,

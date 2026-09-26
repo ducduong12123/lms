@@ -62,9 +62,14 @@ class KnowledgeMap:
 
 	def summary(self) -> dict[str, Any]:
 		decisions = self.edges + self.q_matrix + self.merges
-		counts = {status: sum(1 for d in decisions if d["status"] == status) for status in ("accepted", "rejected", "review")}
+		counts = {
+			status: sum(1 for d in decisions if d["status"] == status)
+			for status in ("accepted", "rejected", "review")
+		}
 		counts["total"] = len(decisions)
-		counts["automatic_share"] = round((counts["accepted"] + counts["rejected"]) / len(decisions), 3) if decisions else 0.0
+		counts["automatic_share"] = (
+			round((counts["accepted"] + counts["rejected"]) / len(decisions), 3) if decisions else 0.0
+		)
 		return counts
 
 
@@ -94,7 +99,10 @@ def propose_components(llm, course: dict[str, Any]) -> list[dict[str, Any]]:
 			"id": lesson["id"],
 			"title": lesson.get("title"),
 			"text": str(lesson.get("text") or "")[:1500],
-			"questions": [{"id": q["id"], "text": q.get("text"), "options": q.get("options") or []} for q in lesson.get("questions") or []],
+			"questions": [
+				{"id": q["id"], "text": q.get("text"), "options": q.get("options") or []}
+				for q in lesson.get("questions") or []
+			],
 		}
 		for lesson in lessons
 	]
@@ -155,7 +163,9 @@ def build_knowledge_map(
 
 	# 1. Components from the course-wide catalogue; a concept's lessons include those of its questions.
 	for entry in catalogue:
-		from_questions = [lesson_of_question[q] for q in entry.get("questions", []) if q in lesson_of_question]
+		from_questions = [
+			lesson_of_question[q] for q in entry.get("questions", []) if q in lesson_of_question
+		]
 		result.components[entry["key"]] = {
 			"key": entry["key"],
 			"label": entry["label"],
@@ -187,7 +197,9 @@ def build_knowledge_map(
 		)
 		judgment = answers["same"]
 		status = route(judgment.value, accept_at, reject_at)
-		result.merges.append({"keep": a, "drop": b, "p": judgment.value, "status": status, "source": judgment.source})
+		result.merges.append(
+			{"keep": a, "drop": b, "p": judgment.value, "status": status, "source": judgment.source}
+		)
 		if status == "accepted":
 			alias[b] = a
 
@@ -196,7 +208,9 @@ def build_knowledge_map(
 
 	for dropped, kept_key in alias.items():
 		merged = result.components.pop(dropped)
-		result.components[kept_key]["lessons"] = list(dict.fromkeys(result.components[kept_key]["lessons"] + merged["lessons"]))
+		result.components[kept_key]["lessons"] = list(
+			dict.fromkeys(result.components[kept_key]["lessons"] + merged["lessons"])
+		)
 
 	lesson_components: dict[str, list[str]] = {}
 	for key, component in result.components.items():
@@ -227,7 +241,16 @@ def build_knowledge_map(
 		if judgment.value is None and origin == "course_order":
 			continue  # without a judge, course order alone is too weak to queue for review
 		status = route(judgment.value, accept_at, reject_at)
-		scored.append({"from": source, "to": target, "p": judgment.value, "status": status, "source": judgment.source, "origin": origin})
+		scored.append(
+			{
+				"from": source,
+				"to": target,
+				"p": judgment.value,
+				"status": status,
+				"source": judgment.source,
+				"origin": origin,
+			}
+		)
 
 	kept: list[tuple[str, str]] = []
 	for edge in sorted(scored, key=lambda e: -(e["p"] or 0.0)):
@@ -244,7 +267,9 @@ def build_knowledge_map(
 	for lesson in lessons:
 		own = lesson_components.get(lesson["id"], [])
 		prerequisites = [source for source, target in kept if target in own]
-		concepts = all_keys if len(all_keys) <= MAX_ALL_CANDIDATES else list(dict.fromkeys(own + prerequisites))
+		concepts = (
+			all_keys if len(all_keys) <= MAX_ALL_CANDIDATES else list(dict.fromkeys(own + prerequisites))
+		)
 		if not concepts:
 			continue
 		for question in lesson.get("questions") or []:
@@ -269,6 +294,12 @@ def build_knowledge_map(
 				else:
 					status = route(judgment.value, accept_at, reject_at)
 				result.q_matrix.append(
-					{"question": question["id"], "kc": concept, "p": judgment.value, "status": status, "source": judgment.source}
+					{
+						"question": question["id"],
+						"kc": concept,
+						"p": judgment.value,
+						"status": status,
+						"source": judgment.source,
+					}
 				)
 	return result
