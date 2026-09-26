@@ -578,8 +578,8 @@ frappe.get_doc(
 		"active": 1,
 		"baseline_quiz": baseline.name,
 		"recheck_quiz": recheck.name,
-		"set_size": 4,
-		"budget_sets": 3,
+		"set_size": 3,
+		"budget_sets": 2,  # sets per lesson
 		"recheck_delay_hours": 72,
 	}
 ).insert()
