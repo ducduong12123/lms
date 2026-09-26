@@ -351,7 +351,7 @@ def _plan_reason(condition: Condition, diagnosis, labels: dict[str, str]) -> str
 		return "Bạn đã vững mọi phần có dữ liệu; hệ thống cho thêm câu để củng cố."
 	if diagnosis.reason == "explore":
 		return f"Hệ thống chưa có dữ liệu về “{focus}”, nên bạn thử vài câu để kiểm tra."
-	return f"Lượt này tập trung vào “{focus}”, phần bạn còn yếu nhất."
+	return f"Lượt này tập trung vào “{focus}”, một phần bạn còn yếu."
 
 
 def _log(participant, *, kind: str, action: str, reason: str, **payload) -> str:

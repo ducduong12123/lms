@@ -114,6 +114,19 @@ class Diagnosis(unittest.TestCase):
 		result = adaptive.diagnose(self.mastery(count=52, prob=40), EDGES, ORDER, regress_from="prob")
 		self.assertEqual(result.focus_kc, "comb")
 
+	def test_regress_without_a_shaky_prerequisite_sets_the_kc_aside(self):
+		# "count" has no prerequisite: rather than drilling the same questions again, move on.
+		weak_elsewhere = adaptive.diagnose(
+			self.mastery(count=30, cond=45), EDGES, ORDER, regress_from="count"
+		)
+		self.assertEqual((weak_elsewhere.focus_kc, weak_elsewhere.target_kc), ("cond", "cond"))
+		unseen_left = adaptive.diagnose(self.mastery(count=30), EDGES, ORDER, regress_from="count")
+		self.assertEqual((unseen_left.focus_kc, unseen_left.reason), ("cond", "explore"))
+		nothing_else = adaptive.diagnose(
+			self.mastery(count=30, comb=60, prob=60, cond=60), EDGES, ORDER, regress_from="count"
+		)
+		self.assertEqual((nothing_else.focus_kc, nothing_else.reason), ("count", "weak"))
+
 	def test_ancestors_handle_a_hand_made_cycle(self):
 		self.assertEqual(set(adaptive.ancestors("a", [("a", "b"), ("b", "a")])), {"b"})
 

@@ -21,7 +21,7 @@ from lms.cognilearn.core import bkt, elo
 from lms.cognilearn.core.contracts import Condition
 from lms.cognilearn.core.judge import ask_safely, noul
 
-ADAPTIVE_VERSION = "graph_adaptive_policy_v2"
+ADAPTIVE_VERSION = "graph_adaptive_policy_v3"
 # On the Elo scale one independent answer moves a KC only ~2 points from 50%, so absolute
 # "mastered" thresholds (70%) cannot be reached inside a pilot session. Diagnosis instead reads
 # the sign of the evidence: below 50% = more failure than success, 55%+ = clearly positive.
@@ -184,7 +184,9 @@ def diagnose(
 ) -> GraphDiagnosis:
 	"""Target the KC with the most net-negative evidence; practise its most foundational weak
 	prerequisite first if it has one. With no weakness, probe the most advanced
-	unseen KC whose prerequisites show no weakness: success there vouches for what lies below."""
+	unseen KC whose prerequisites show no weakness: success there vouches for what lies below.
+	A regressed KC with no shaky prerequisite is set aside for this set (another weak or unseen
+	KC first) instead of drilling the same questions again; it stays weak and comes back later."""
 	order = {kc: index for index, kc in enumerate(kc_order)}
 
 	def score(kc):
@@ -199,17 +201,19 @@ def diagnose(
 		shaky.sort(key=lambda kc: (score(kc) if score(kc) is not None else -1.0, order.get(kc, 999)))
 		if shaky:
 			return GraphDiagnosis(shaky[0], regress_from, shaky, weak, "gap")
-		return GraphDiagnosis(regress_from, regress_from, [], weak, "weak")
-	if weak:
-		target = weak[0]
-		gaps = [kc for kc in ancestors(target, edges) if kc in weak]
+	candidates = [kc for kc in weak if kc != regress_from]
+	if candidates:
+		target = candidates[0]
+		gaps = [kc for kc in ancestors(target, edges) if kc in weak and kc != regress_from]
 		if gaps:
 			return GraphDiagnosis(gaps[0], target, gaps, weak, "gap")
 		return GraphDiagnosis(target, target, [], weak, "weak")
 	depth = {kc: len(ancestors(kc, edges)) for kc in kc_order}
 	unseen = sorted((kc for kc in kc_order if score(kc) is None), key=lambda kc: (-depth[kc], order[kc]))
 	if unseen:
-		return GraphDiagnosis(unseen[0], unseen[0], [], [], "explore")
+		return GraphDiagnosis(unseen[0], unseen[0], [], weak, "explore")
+	if regress_from:
+		return GraphDiagnosis(regress_from, regress_from, [], weak, "weak")
 	return GraphDiagnosis(None, None, [], [], "mastered")
 
 
@@ -313,7 +317,10 @@ def replan(
 		)
 	if accuracy is not None and accuracy < REGRESS_BELOW:
 		return Replan(
-			"regress", f"Phần{topic} còn nhiều lỗi. Hãy củng cố kiến thức nền của nó trước.", accuracy
+			"regress",
+			f"Phần{topic} còn nhiều lỗi. Hệ thống cho bạn củng cố kiến thức nền của nó, "
+			"hoặc tạm chuyển sang phần khác rồi quay lại sau.",
+			accuracy,
 		)
 	return Replan(
 		"continue", f"Bạn đang tiến bộ{topic} nhưng chưa ổn định; luyện thêm một lượt nữa.", accuracy
