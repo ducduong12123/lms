@@ -112,7 +112,7 @@ export const routes = [
 		component: () => import('@/pages/SCORMChapter.vue'),
 		props: true,
 	},
-	// CogniLearn: adaptive practice for learners, knowledge map for teachers.
+	// CogniLearn: adaptive practice for learners, knowledge map and study monitor for teachers.
 	{
 		path: '/courses/:courseName/practice',
 		name: 'CogniLearnPractice',
@@ -123,6 +123,12 @@ export const routes = [
 		path: '/courses/:courseName/knowledge-map',
 		name: 'CogniLearnMap',
 		component: () => import('@/pages/CogniLearn/KnowledgeMap.vue'),
+		props: true,
+	},
+	{
+		path: '/courses/:courseName/study-monitor',
+		name: 'CogniLearnMonitor',
+		component: () => import('@/pages/CogniLearn/StudyMonitor.vue'),
 		props: true,
 	},
 	{
@@ -425,18 +431,14 @@ export const routes = [
 		path: '/programming-exercises/submissions',
 		name: 'ProgrammingExerciseSubmissions',
 		component: () =>
-			import(
-				'@/pages/ProgrammingExercises/ProgrammingExerciseSubmissions.vue'
-			),
+			import('@/pages/ProgrammingExercises/ProgrammingExerciseSubmissions.vue'),
 		props: true,
 	},
 	{
 		path: '/programming-exercises/:exerciseID/submission/:submissionID',
 		name: 'ProgrammingExerciseSubmission',
 		component: () =>
-			import(
-				'@/pages/ProgrammingExercises/ProgrammingExerciseSubmission.vue'
-			),
+			import('@/pages/ProgrammingExercises/ProgrammingExerciseSubmission.vue'),
 		props: true,
 	},
 	{

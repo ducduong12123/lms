@@ -5,7 +5,9 @@
 			<div v-if="status.loading && !view" class="text-p-base text-ink-gray-5">
 				{{ __('Loading…') }}
 			</div>
-			<div v-else-if="error" class="text-p-base text-ink-red-5">{{ error }}</div>
+			<div v-else-if="error" class="text-p-base text-ink-red-5">
+				{{ error }}
+			</div>
 
 			<div
 				v-else-if="view && !view.study"
@@ -89,7 +91,9 @@
 						<Badge
 							variant="subtle"
 							theme="gray"
-							:label="__('{0}/{1} done').format(lessonsDone, view.lessons.length)"
+							:label="
+								__('{0}/{1} done').format(lessonsDone, view.lessons.length)
+							"
 						/>
 					</div>
 					<p class="text-p-base text-ink-gray-7">
@@ -122,6 +126,38 @@
 						/>
 					</router-link>
 				</section>
+
+				<section
+					v-if="view.step !== 'baseline' && concepts.length"
+					class="space-y-3 rounded-6 border border-outline-gray-2 p-4"
+					data-testid="cl-my-progress"
+				>
+					<h2 class="text-base-semibold text-ink-gray-9">
+						{{ __('How you are doing by concept') }}
+					</h2>
+					<p class="text-p-base text-ink-gray-7">
+						{{
+							__(
+								'From your own answers in quizzes and practice. Answers after a hint count for less, and a concept you have not practised for a while slowly fades back.',
+							)
+						}}
+					</p>
+					<div class="grid gap-2 sm:grid-cols-2">
+						<div
+							v-for="concept in concepts"
+							:key="concept.name"
+							class="flex items-center gap-2 rounded-6 px-3 py-2"
+							:class="BAND_CLASS[concept.band]"
+						>
+							<span class="min-w-0 flex-1 text-p-base text-ink-gray-9">
+								{{ concept.label }}
+							</span>
+							<span class="shrink-0 text-p-sm text-ink-gray-7">
+								{{ bandLabel[concept.band] }}
+							</span>
+						</div>
+					</div>
+				</section>
 			</template>
 		</div>
 	</PageBody>
@@ -132,6 +168,7 @@ import { computed, ref } from 'vue'
 import { Badge, Button, createResource, usePageMeta } from 'frappe-ui'
 import PageHeader from '@/components/Layouts/pages/PageHeader.vue'
 import PageBody from '@/components/Layouts/pages/PageBody.vue'
+import { BAND_CLASS, bandLabels } from '@/utils/cognilearnBands'
 
 const props = defineProps({
 	courseName: { type: String, required: true },
@@ -148,9 +185,19 @@ const status = createResource({
 	},
 })
 
+const progress = createResource({
+	url: 'lms.cognilearn.api.my_progress',
+	params: { course: props.courseName },
+	auto: true,
+})
+
 const view = computed(() => status.data)
+const concepts = computed(() => progress.data?.concepts || [])
+const bandLabel = computed(() => bandLabels())
 const lessonsDone = computed(
-	() => (view.value?.lessons || []).filter((lesson) => lesson.status === 'done').length,
+	() =>
+		(view.value?.lessons || []).filter((lesson) => lesson.status === 'done')
+			.length,
 )
 const lessonTheme = { done: 'green', open: 'orange', todo: 'gray' }
 const lessonLabel = computed(() => ({
@@ -172,7 +219,10 @@ const breadcrumbs = computed(() => [
 	},
 	{
 		label: __('Adaptive practice'),
-		route: { name: 'CogniLearnPractice', params: { courseName: props.courseName } },
+		route: {
+			name: 'CogniLearnPractice',
+			params: { courseName: props.courseName },
+		},
 	},
 ])
 

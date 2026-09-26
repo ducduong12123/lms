@@ -12543,3 +12543,156 @@ msgstr "Bạn đã luyện tập xong mọi bài. Bài kiểm tra lại nằm �
 
 msgid "Practice overview"
 msgstr "Tổng quan luyện tập"
+
+msgid "How you are doing by concept"
+msgstr "Mức nắm vững của bạn theo từng kiến thức"
+
+msgid "From your own answers in quizzes and practice. Answers after a hint count for less, and a concept you have not practised for a while slowly fades back."
+msgstr "Dựa trên chính câu trả lời của bạn trong bài kiểm tra và luyện tập. Câu trả lời sau khi xem gợi ý được tính ít hơn, và kiến thức lâu không luyện sẽ giảm dần."
+
+msgid "Study monitor"
+msgstr "Theo dõi nghiên cứu"
+
+msgid "Refresh"
+msgstr "Làm mới"
+
+msgid "{0} participants"
+msgstr "{0} người tham gia"
+
+msgid "{0} sets × {1} questions per lesson"
+msgstr "{0} lượt × {1} câu mỗi bài"
+
+msgid "Study arms"
+msgstr "Các nhóm thử nghiệm"
+
+msgid "Descriptive only. The pilot is too small for a significance test; scores are the first attempt at each quiz."
+msgstr "Chỉ mang tính mô tả. Pilot quá nhỏ để kiểm định thống kê; điểm là lần làm đầu tiên của mỗi bài kiểm tra."
+
+msgid "Arm"
+msgstr "Nhóm"
+
+msgid "Lessons done"
+msgstr "Số bài đã xong"
+
+msgid "Baseline"
+msgstr "Đầu vào"
+
+msgid "Recheck"
+msgstr "Kiểm tra lại"
+
+msgid "Gain"
+msgstr "Tiến bộ"
+
+msgid "Practice first answers correct"
+msgstr "Luyện tập: đúng ngay lần đầu"
+
+msgid "Questions with hints"
+msgstr "Câu có dùng gợi ý"
+
+msgid "n = {0}"
+msgstr "n = {0}"
+
+msgid "No learner has started yet."
+msgstr "Chưa có người học nào bắt đầu."
+
+msgid "Practice"
+msgstr "Luyện tập"
+
+msgid "Last active"
+msgstr "Hoạt động gần nhất"
+
+msgid "{0}/{1} lessons"
+msgstr "{0}/{1} bài"
+
+msgid "Now: {0}"
+msgstr "Đang học: {0}"
+
+msgid "Recheck due {0}"
+msgstr "Hạn kiểm tra lại {0}"
+
+msgid "{0}/{1} right first time"
+msgstr "{0}/{1} đúng ngay lần đầu"
+
+msgid "Hints on {0}/{1}"
+msgstr "Dùng gợi ý {0}/{1} câu"
+
+msgid "Solution before trying: {0}"
+msgstr "Xem lời giải trước khi thử: {0}"
+
+msgid "Mastery by concept (Elo)"
+msgstr "Mức nắm vững theo kiến thức (Elo)"
+
+msgid "Concepts in lesson order. Each cell is the learner’s estimated chance of answering an average question on that concept; the number under it is how many answers it rests on."
+msgstr "Kiến thức xếp theo thứ tự bài. Mỗi ô là xác suất ước tính người học trả lời đúng một câu mức trung bình về kiến thức đó; số nhỏ bên dưới là số câu trả lời làm căn cứ."
+
+msgid "Elo vs BKT: predicting the next answer"
+msgstr "Elo và BKT: dự đoán câu trả lời tiếp theo"
+
+msgid "Before every answer both models write down the chance it will be right; only Elo drives decisions, BKT runs in the shadow. Higher AUC and lower log loss are better."
+msgstr "Trước mỗi câu trả lời, cả hai mô hình ghi lại xác suất trả lời đúng; chỉ Elo ra quyết định, BKT chạy song song để đối chiếu. AUC cao hơn và log loss thấp hơn là tốt hơn."
+
+msgid "Answers"
+msgstr "Câu trả lời"
+
+msgid "Latest decisions"
+msgstr "Quyết định gần nhất"
+
+msgid "No decisions yet."
+msgstr "Chưa có quyết định nào."
+
+msgid "Could not load the study monitor."
+msgstr "Không tải được trang theo dõi."
+
+msgid "Adaptive (AI)"
+msgstr "Thích ứng (AI)"
+
+msgid "Fixed order"
+msgstr "Thứ tự cố định"
+
+msgid "Practising"
+msgstr "Đang luyện tập"
+
+msgid "Waiting for recheck"
+msgstr "Chờ kiểm tra lại"
+
+msgid "Recheck due"
+msgstr "Đến hạn kiểm tra lại"
+
+msgid "Quick solution"
+msgstr "Xem lời giải quá nhanh"
+
+msgid "Quick retry"
+msgstr "Thử lại quá nhanh"
+
+msgid "Solution without trying"
+msgstr "Xem lời giải khi chưa thử"
+
+msgid "All answers"
+msgstr "Tất cả câu trả lời"
+
+msgid "Answered without hints"
+msgstr "Câu tự làm, không gợi ý"
+
+msgid "Quizzes (baseline, lessons)"
+msgstr "Bài kiểm tra (đầu vào, trong bài)"
+
+msgid "no evidence yet"
+msgstr "chưa có dữ liệu"
+
+msgid "{0} answers"
+msgstr "{0} câu trả lời"
+
+msgid "confidence {0}"
+msgstr "độ tin cậy {0}"
+
+msgid "Needs more practice"
+msgstr "Cần luyện thêm"
+
+msgid "Getting there"
+msgstr "Đang tiến bộ"
+
+msgid "Doing well"
+msgstr "Làm tốt"
+
+msgid "Not practised yet"
+msgstr "Chưa có dữ liệu"

@@ -13,37 +13,10 @@ from __future__ import annotations
 import argparse
 import csv
 import json
-import math
 from datetime import datetime
 
 from lms.cognilearn.core import adaptive
-
-
-def auc(pairs: list[tuple[float, int]]) -> float | None:
-	positives = [p for p, y in pairs if y]
-	negatives = [p for p, y in pairs if not y]
-	if not positives or not negatives:
-		return None
-	wins = sum((p > q) + 0.5 * (p == q) for p in positives for q in negatives)
-	return round(wins / (len(positives) * len(negatives)), 4)
-
-
-def rmse(pairs: list[tuple[float, int]]) -> float | None:
-	return round(math.sqrt(sum((p - y) ** 2 for p, y in pairs) / len(pairs)), 4) if pairs else None
-
-
-def log_loss(pairs: list[tuple[float, int]]) -> float | None:
-	if not pairs:
-		return None
-	eps = 1e-6
-	return round(
-		-sum(y * math.log(max(p, eps)) + (1 - y) * math.log(max(1 - p, eps)) for p, y in pairs) / len(pairs),
-		4,
-	)
-
-
-def score(pairs: list[tuple[float, int]]) -> dict:
-	return {"n": len(pairs), "auc": auc(pairs), "rmse": rmse(pairs), "log_loss": log_loss(pairs)}
+from lms.cognilearn.core.monitor import score
 
 
 def compare(rows: list[dict], sources: set[str] | None = None) -> dict:

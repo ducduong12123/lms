@@ -6,7 +6,7 @@ import json
 
 import frappe
 
-from lms.cognilearn.adapters import events, hints, repository, study
+from lms.cognilearn.adapters import events, hints, monitor, repository, study
 from lms.cognilearn.core import evaluator
 from lms.lms.utils import has_course_instructor_role, has_moderator_role
 
@@ -254,6 +254,23 @@ def study_overview(course: str) -> dict:
 	}
 
 
+@frappe.whitelist()
+def study_monitor(course: str) -> dict:
+	"""Teacher dashboard: progress, mastery, help-seeking, Elo vs BKT, recent decisions."""
+	_require_teacher()
+	return monitor.study_dashboard(_study(course))
+
+
+@frappe.whitelist()
+def my_progress(course: str) -> dict:
+	"""The learner's own concepts in coarse bands, the same for both study arms."""
+	member = _require_login()
+	found = study.active_study(course)
+	if not found or not study.baseline_done(found, member):
+		return {"concepts": []}
+	return {"concepts": monitor.learner_progress(found, member)}
+
+
 @frappe.whitelist(methods=["POST"])
 def run_leak_gate(course: str) -> dict:
 	_require_teacher()
@@ -264,9 +281,11 @@ def run_leak_gate(course: str) -> dict:
 def course_links(course: str) -> dict:
 	"""Which CogniLearn pages this user can open for a course (nothing for plain courses)."""
 	if frappe.session.user == "Guest":
-		return {"practice": False, "map": False}
+		return {"practice": False, "map": False, "monitor": False}
 	teacher = has_moderator_role() or has_course_instructor_role() or "System Manager" in frappe.get_roles()
+	active = bool(study.active_study(course))
 	return {
-		"practice": bool(study.active_study(course)),
+		"practice": active,
 		"map": teacher and bool(frappe.db.exists("CL Knowledge Component", {"course": course})),
+		"monitor": teacher and active,
 	}
