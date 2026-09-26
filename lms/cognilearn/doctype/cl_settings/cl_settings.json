@@ -1,0 +1,117 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "creation": "2026-09-26 09:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "llm_section",
+  "llm_base_url",
+  "llm_api_key",
+  "llm_model",
+  "jev_section",
+  "jev_api_key",
+  "jev_model",
+  "accept_threshold",
+  "reject_threshold",
+  "model_section",
+  "half_life_days",
+  "auto_map_on_change"
+ ],
+ "fields": [
+  {
+   "fieldname": "llm_section",
+   "fieldtype": "Section Break",
+   "label": "Knowledge-mapping LLM"
+  },
+  {
+   "fieldname": "llm_base_url",
+   "fieldtype": "Data",
+   "label": "LLM Base URL",
+   "description": "OpenAI-compatible endpoint used by the LMS gateway, e.g. http://172.22.224.1:20128/v1 from Docker."
+  },
+  {
+   "fieldname": "llm_api_key",
+   "fieldtype": "Password",
+   "label": "LLM API Key"
+  },
+  {
+   "fieldname": "llm_model",
+   "fieldtype": "Data",
+   "label": "LLM Model",
+   "default": "cx/gpt-6-luna"
+  },
+  {
+   "fieldname": "jev_section",
+   "fieldtype": "Section Break",
+   "label": "Jev (TypeSafe)"
+  },
+  {
+   "fieldname": "jev_api_key",
+   "fieldtype": "Password",
+   "label": "Jev API Key",
+   "description": "Empty = deterministic fallback; every proposal goes to teacher review."
+  },
+  {
+   "fieldname": "jev_model",
+   "fieldtype": "Data",
+   "label": "Jev Model",
+   "default": "jev-latest"
+  },
+  {
+   "fieldname": "accept_threshold",
+   "fieldtype": "Float",
+   "label": "Auto-accept at probability",
+   "default": "0.8"
+  },
+  {
+   "fieldname": "reject_threshold",
+   "fieldtype": "Float",
+   "label": "Auto-reject at probability",
+   "default": "0.2"
+  },
+  {
+   "fieldname": "model_section",
+   "fieldtype": "Section Break",
+   "label": "Learner model"
+  },
+  {
+   "fieldname": "half_life_days",
+   "fieldtype": "Float",
+   "label": "Forgetting half-life (days)",
+   "default": "14"
+  },
+  {
+   "fieldname": "auto_map_on_change",
+   "fieldtype": "Check",
+   "label": "Map knowledge automatically when course content changes",
+   "default": "1"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-09-26 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "CogniLearn",
+ "name": "CL Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "share": 0
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "issingle": 1
+}

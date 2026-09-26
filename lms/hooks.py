@@ -186,6 +186,10 @@ doc_events = {
 	},
 }
 
+# CogniLearn: re-map the course's knowledge components when its content changes.
+for _doctype in ("LMS Course", "Course Chapter", "Course Lesson", "LMS Quiz"):
+	doc_events.setdefault(_doctype, {})["on_update"] = "lms.cognilearn.adapters.events.on_content_change"
+
 # Scheduled Tasks
 # ---------------
 scheduler_events = {

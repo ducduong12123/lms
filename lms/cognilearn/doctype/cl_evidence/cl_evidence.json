@@ -1,0 +1,165 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "creation": "2026-09-26 09:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "member",
+  "item",
+  "course",
+  "lesson",
+  "stage",
+  "mode",
+  "correct",
+  "misconception_code",
+  "hints_used",
+  "latency_ms",
+  "attempt",
+  "weight",
+  "concepts",
+  "response",
+  "condition",
+  "evaluator_version",
+  "model_version"
+ ],
+ "fields": [
+  {
+   "fieldname": "member",
+   "fieldtype": "Link",
+   "label": "Member",
+   "options": "User",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "item",
+   "fieldtype": "Link",
+   "label": "Item",
+   "options": "CL Item",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "course",
+   "fieldtype": "Link",
+   "label": "Course",
+   "options": "LMS Course"
+  },
+  {
+   "fieldname": "lesson",
+   "fieldtype": "Link",
+   "label": "Lesson",
+   "options": "Course Lesson"
+  },
+  {
+   "fieldname": "stage",
+   "fieldtype": "Data",
+   "label": "Stage",
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "mode",
+   "fieldtype": "Select",
+   "label": "Evidence Mode",
+   "options": "independent\nguided",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "correct",
+   "fieldtype": "Check",
+   "label": "Correct",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "misconception_code",
+   "fieldtype": "Data",
+   "label": "Misconception"
+  },
+  {
+   "fieldname": "hints_used",
+   "fieldtype": "Int",
+   "label": "Hints Used"
+  },
+  {
+   "fieldname": "latency_ms",
+   "fieldtype": "Int",
+   "label": "Latency (ms)"
+  },
+  {
+   "fieldname": "attempt",
+   "fieldtype": "Int",
+   "label": "Attempt"
+  },
+  {
+   "fieldname": "weight",
+   "fieldtype": "Float",
+   "label": "Evidence Weight"
+  },
+  {
+   "fieldname": "concepts",
+   "fieldtype": "JSON",
+   "label": "Concepts (Q-matrix row)"
+  },
+  {
+   "fieldname": "response",
+   "fieldtype": "JSON",
+   "label": "Response"
+  },
+  {
+   "fieldname": "condition",
+   "fieldtype": "Data",
+   "label": "Study Condition"
+  },
+  {
+   "fieldname": "evaluator_version",
+   "fieldtype": "Data",
+   "label": "Evaluator Version"
+  },
+  {
+   "fieldname": "model_version",
+   "fieldtype": "Data",
+   "label": "Learner Model Version"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-09-26 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "CogniLearn",
+ "name": "CL Evidence",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 1,
+   "share": 0
+  },
+  {
+   "role": "Moderator",
+   "read": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 0,
+   "share": 0
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 0,
+ "autoname": "hash",
+ "naming_rule": "Random"
+}

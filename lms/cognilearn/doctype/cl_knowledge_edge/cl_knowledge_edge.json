@@ -1,0 +1,119 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "creation": "2026-09-26 09:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "course",
+  "prerequisite",
+  "dependent",
+  "status",
+  "probability",
+  "source",
+  "origin"
+ ],
+ "fields": [
+  {
+   "fieldname": "course",
+   "fieldtype": "Link",
+   "label": "Course",
+   "options": "LMS Course",
+   "reqd": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "prerequisite",
+   "fieldtype": "Link",
+   "label": "Prerequisite",
+   "options": "CL Knowledge Component",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "dependent",
+   "fieldtype": "Link",
+   "label": "Dependent",
+   "options": "CL Knowledge Component",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Accepted\nRejected\nReview",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "probability",
+   "fieldtype": "Float",
+   "label": "Probability",
+   "read_only": 1
+  },
+  {
+   "fieldname": "source",
+   "fieldtype": "Data",
+   "label": "Judged By",
+   "read_only": 1
+  },
+  {
+   "fieldname": "origin",
+   "fieldtype": "Data",
+   "label": "Candidate Origin",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-09-26 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "CogniLearn",
+ "name": "CL Knowledge Edge",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "share": 0
+  },
+  {
+   "role": "Moderator",
+   "read": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 0,
+   "share": 0
+  },
+  {
+   "role": "Course Creator",
+   "read": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 0,
+   "share": 0
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "autoname": "hash",
+ "naming_rule": "Random"
+}

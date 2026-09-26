@@ -1,5 +1,6 @@
 import { call, toast } from 'frappe-ui'
 import { Quiz } from '@/utils/quiz'
+import { CogniLearnExercise } from '@/utils/cognilearn'
 import { Program } from '@/utils/program'
 import { Assignment } from '@/utils/assignment'
 import { Upload } from '@/utils/upload'
@@ -179,6 +180,7 @@ export function getEditorTools(
 			class: Program,
 			config: { studentView },
 		},
+		cognilearnExercise: CogniLearnExercise,
 		markdown: {
 			class: Markdown,
 			inlineToolbar: INLINE_TOOLBAR_ORDER,

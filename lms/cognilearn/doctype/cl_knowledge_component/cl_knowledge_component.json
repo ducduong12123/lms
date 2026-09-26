@@ -1,0 +1,108 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "creation": "2026-09-26 09:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "course",
+  "kc_key",
+  "label",
+  "description",
+  "lessons",
+  "mapper_version"
+ ],
+ "fields": [
+  {
+   "fieldname": "course",
+   "fieldtype": "Link",
+   "label": "Course",
+   "options": "LMS Course",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "kc_key",
+   "fieldtype": "Data",
+   "label": "Key",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "label",
+   "fieldtype": "Data",
+   "label": "Label",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "Description"
+  },
+  {
+   "fieldname": "lessons",
+   "fieldtype": "JSON",
+   "label": "Lessons"
+  },
+  {
+   "fieldname": "mapper_version",
+   "fieldtype": "Data",
+   "label": "Mapper Version",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-09-26 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "CogniLearn",
+ "name": "CL Knowledge Component",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "share": 0
+  },
+  {
+   "role": "Moderator",
+   "read": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 0,
+   "share": 0
+  },
+  {
+   "role": "Course Creator",
+   "read": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 0,
+   "share": 0
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "autoname": "hash",
+ "title_field": "label",
+ "naming_rule": "Random"
+}

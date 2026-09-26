@@ -1,0 +1,111 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "creation": "2026-09-26 09:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "course",
+  "status",
+  "judge_source",
+  "llm_model",
+  "mapper_version",
+  "automatic_share",
+  "summary",
+  "result",
+  "error"
+ ],
+ "fields": [
+  {
+   "fieldname": "course",
+   "fieldtype": "Link",
+   "label": "Course",
+   "options": "LMS Course",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Queued\nRunning\nDone\nFailed",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "judge_source",
+   "fieldtype": "Data",
+   "label": "Judge"
+  },
+  {
+   "fieldname": "llm_model",
+   "fieldtype": "Data",
+   "label": "LLM Model"
+  },
+  {
+   "fieldname": "mapper_version",
+   "fieldtype": "Data",
+   "label": "Mapper Version"
+  },
+  {
+   "fieldname": "automatic_share",
+   "fieldtype": "Percent",
+   "label": "Decided Automatically",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "summary",
+   "fieldtype": "JSON",
+   "label": "Summary"
+  },
+  {
+   "fieldname": "result",
+   "fieldtype": "JSON",
+   "label": "Full Result"
+  },
+  {
+   "fieldname": "error",
+   "fieldtype": "Small Text",
+   "label": "Error"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-09-26 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "CogniLearn",
+ "name": "CL Knowledge Map Run",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 1,
+   "share": 0
+  },
+  {
+   "role": "Moderator",
+   "read": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 0,
+   "share": 0
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "autoname": "format:CLKM-{#####}",
+ "naming_rule": "Expression"
+}
