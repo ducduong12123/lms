@@ -1983,6 +1983,16 @@ def get_week_difference(start_date: str, current_date: str) -> int:
 
 
 @frappe.whitelist()
+def get_unread_notification_count() -> int:
+	# frappe.client.get_count checks doctype-level read on Notification Log, which a
+	# Website User (every LMS student) lacks, so the sidebar badge 403'd for students.
+	# Scoped to the session user like get_notifications.
+	if frappe.session.user == "Guest":
+		return 0
+	return frappe.db.count("Notification Log", {"for_user": frappe.session.user, "read": 0})
+
+
+@frappe.whitelist()
 def get_notifications(filters: dict = None):
 	filters = frappe._dict(filters or {})
 	# Always scoped to the session user. No IDOR surface; only an optional read flag from the client is honoured.

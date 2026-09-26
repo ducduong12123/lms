@@ -63,20 +63,16 @@ describe('the count resource', () => {
 		expect(resource.cache).toBeUndefined()
 	})
 
-	it('counts only the signed-in user unread logs', () => {
-		expect(resource.makeParams?.()).toEqual({
-			doctype: 'Notification Log',
-			filters: { for_user: 'raiza@example.com', read: 0 },
-		})
+	it('counts through the server endpoint scoped to the session user', () => {
+		// frappe.client.get_count needs doctype-level read on Notification Log,
+		// which a student (Website User) lacks, so the badge used to 403.
+		expect(resource.url).toBe('lms.lms.api.get_unread_notification_count')
 	})
 
-	it('asks who the user is at request time, not at import time', () => {
-		// Module-level, so the store is imported before pinia is even active;
-		// reading the session inside makeParams is what keeps that legal.
-		session.user = 'someone@else.com'
-		expect(resource.makeParams?.()).toMatchObject({
-			filters: { for_user: 'someone@else.com', read: 0 },
-		})
+	it('sends no user of its own, so the client cannot count someone else', () => {
+		// The server reads frappe.session.user; the store is module-level and
+		// imported before pinia is active, so it must not capture a user either.
+		expect(resource.makeParams).toBeUndefined()
 	})
 
 	it('does not fetch on its own', () => {

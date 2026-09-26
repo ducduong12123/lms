@@ -44,13 +44,9 @@ export const notifications = createListResource({
 export const unreadCount = ref(0)
 
 export const unreadNotifications = createResource({
-	url: 'frappe.client.get_count',
-	makeParams() {
-		return {
-			doctype: 'Notification Log',
-			filters: { for_user: sessionStore().user, read: 0 },
-		}
-	},
+	// Server-side count scoped to the session user; frappe.client.get_count needs
+	// doctype-level read on Notification Log, which students do not have.
+	url: 'lms.lms.api.get_unread_notification_count',
 	onSuccess(data) {
 		unreadCount.value = data || 0
 	},
