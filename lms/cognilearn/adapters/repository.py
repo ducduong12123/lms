@@ -57,7 +57,9 @@ def seed_pilot_items() -> int:
 		if frappe.db.exists("CL Item", item["code"]):
 			frappe.db.set_value("CL Item", item["code"], values)
 		else:
-			frappe.get_doc({"doctype": "CL Item", "code": item["code"], **values}).insert(ignore_permissions=True)
+			frappe.get_doc({"doctype": "CL Item", "code": item["code"], **values}).insert(
+				ignore_permissions=True
+			)
 	return len(content_sll.ITEMS)
 
 
@@ -159,7 +161,12 @@ def _plain(html_or_md: str | None) -> str:
 
 
 def _question(name: str) -> dict[str, Any] | None:
-	doc = frappe.db.get_value("LMS Question", name, ["name", "question", "type", *[f"option_{i}" for i in range(1, 11)]], as_dict=True)
+	doc = frappe.db.get_value(
+		"LMS Question",
+		name,
+		["name", "question", "type", *[f"option_{i}" for i in range(1, 11)]],
+		as_dict=True,
+	)
 	if not doc:
 		return None
 	options = [_plain(doc[f"option_{i}"]) for i in range(1, 11) if doc.get(f"option_{i}")]
@@ -174,36 +181,63 @@ def course_snapshot(course: str) -> dict[str, Any]:
 		chapter = frappe.get_doc("Course Chapter", chapter_row.chapter)
 		for lesson_row in chapter.lessons:
 			lesson = frappe.get_doc("Course Lesson", lesson_row.lesson)
-			text_parts, questions, quizzes = [_plain(lesson.body)], [], set(filter(None, [lesson.quiz_id]))
+			# A lesson's question bank may be a quiz linked to it without being embedded in the page.
+			linked = frappe.get_all("LMS Quiz", filters={"lesson": lesson.name}, pluck="name")
+			text_parts, questions, quizzes = (
+				[_plain(lesson.body)],
+				[],
+				list(dict.fromkeys(filter(None, [lesson.quiz_id, *linked]))),
+			)
 			for block in get_editorjs_blocks(lesson.content):
 				data = block.get("data") or {}
 				kind = block.get("type")
 				if kind == "quiz" and data.get("quiz"):
-					quizzes.add(data["quiz"])
+					if data["quiz"] not in quizzes:
+						quizzes.append(data["quiz"])
 				elif kind == EXERCISE_BLOCK:
 					for code in data.get("items") or []:
 						if frappe.db.exists("CL Item", code):
 							item = get_item(code)
-							questions.append({"id": code, "doctype": "CL Item", "text": item["stem"], "options": [o["text"] for o in item["options"]]})
+							questions.append(
+								{
+									"id": code,
+									"doctype": "CL Item",
+									"text": item["stem"],
+									"options": [o["text"] for o in item["options"]],
+								}
+							)
 				else:
 					text_parts.append(_plain(data.get("text") or data.get("code") or ""))
 			for quiz in quizzes:
-				for row in frappe.get_all("LMS Quiz Question", filters={"parent": quiz}, fields=["question"], order_by="idx"):
+				for row in frappe.get_all(
+					"LMS Quiz Question", filters={"parent": quiz}, fields=["question"], order_by="idx"
+				):
 					question = _question(row.question)
 					if question:
 						questions.append(question)
-			lessons.append({"id": lesson.name, "title": lesson.title, "text": " ".join(filter(None, text_parts)), "questions": questions})
+			lessons.append(
+				{
+					"id": lesson.name,
+					"title": lesson.title,
+					"text": " ".join(filter(None, text_parts)),
+					"questions": questions,
+				}
+			)
 	return {"name": course, "title": course_doc.title, "lessons": lessons}
 
 
 def save_knowledge_map(course: str, result: KnowledgeMap, snapshot: dict[str, Any]) -> None:
 	"""Replace the course's machine decisions; rows a teacher already edited are kept."""
 	for doctype in ("CL Item Map", "CL Knowledge Edge"):
-		for name in frappe.get_all(doctype, filters={"course": course, "source": ["!=", "teacher"]}, pluck="name"):
+		for name in frappe.get_all(
+			doctype, filters={"course": course, "source": ["!=", "teacher"]}, pluck="name"
+		):
 			frappe.delete_doc(doctype, name, ignore_permissions=True, force=True)
 	names: dict[str, str] = {}
 	for component in result.components.values():
-		existing = frappe.db.get_value("CL Knowledge Component", {"course": course, "kc_key": component["key"]})
+		existing = frappe.db.get_value(
+			"CL Knowledge Component", {"course": course, "kc_key": component["key"]}
+		)
 		values = {
 			"label": component["label"],
 			"description": component["description"],
@@ -214,7 +248,9 @@ def save_knowledge_map(course: str, result: KnowledgeMap, snapshot: dict[str, An
 			frappe.db.set_value("CL Knowledge Component", existing, values)
 			names[component["key"]] = existing
 		else:
-			doc = frappe.get_doc({"doctype": "CL Knowledge Component", "course": course, "kc_key": component["key"], **values})
+			doc = frappe.get_doc(
+				{"doctype": "CL Knowledge Component", "course": course, "kc_key": component["key"], **values}
+			)
 			names[component["key"]] = doc.insert(ignore_permissions=True).name
 	# Concepts from earlier runs that this run no longer proposes go, unless a teacher-reviewed row uses them.
 	kept_by_teacher = set(

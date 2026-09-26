@@ -6,7 +6,11 @@
  "engine": "InnoDB",
  "field_order": [
   "member",
+  "item_doctype",
   "item",
+  "source",
+  "quiz_submission",
+  "practice_set",
   "course",
   "lesson",
   "stage",
@@ -20,6 +24,8 @@
   "concepts",
   "response",
   "condition",
+  "elo_p",
+  "bkt_p",
   "evaluator_version",
   "model_version"
  ],
@@ -34,12 +40,36 @@
    "in_standard_filter": 1
   },
   {
+   "fieldname": "item_doctype",
+   "fieldtype": "Data",
+   "label": "Item DocType",
+   "default": "LMS Question"
+  },
+  {
    "fieldname": "item",
-   "fieldtype": "Link",
+   "fieldtype": "Data",
    "label": "Item",
-   "options": "CL Item",
    "reqd": 1,
    "in_list_view": 1
+  },
+  {
+   "fieldname": "source",
+   "fieldtype": "Select",
+   "label": "Source",
+   "options": "quiz\npractice\nrecheck\nexercise",
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "quiz_submission",
+   "fieldtype": "Link",
+   "label": "Quiz Submission",
+   "options": "LMS Quiz Submission"
+  },
+  {
+   "fieldname": "practice_set",
+   "fieldtype": "Link",
+   "label": "Practice Set",
+   "options": "CL Practice Set"
   },
   {
    "fieldname": "course",
@@ -111,6 +141,18 @@
    "fieldname": "condition",
    "fieldtype": "Data",
    "label": "Study Condition"
+  },
+  {
+   "fieldname": "elo_p",
+   "fieldtype": "Float",
+   "label": "Elo P(correct) before outcome",
+   "precision": "4"
+  },
+  {
+   "fieldname": "bkt_p",
+   "fieldtype": "Float",
+   "label": "BKT P(correct) before outcome (shadow)",
+   "precision": "4"
   },
   {
    "fieldname": "evaluator_version",

@@ -189,6 +189,8 @@ doc_events = {
 # CogniLearn: re-map the course's knowledge components when its content changes.
 for _doctype in ("LMS Course", "Course Chapter", "Course Lesson", "LMS Quiz"):
 	doc_events.setdefault(_doctype, {})["on_update"] = "lms.cognilearn.adapters.events.on_content_change"
+# CogniLearn: every native quiz answer becomes learner evidence.
+doc_events.setdefault("LMS Quiz Submission", {})["after_insert"] = "lms.cognilearn.adapters.study.on_quiz_submission"
 
 # Scheduled Tasks
 # ---------------
@@ -201,6 +203,7 @@ scheduler_events = {
 		"lms.lms.doctype.lms_course.lms_course.update_course_statistics",
 		"lms.lms.doctype.lms_certificate_request.lms_certificate_request.mark_eval_as_completed",
 		"lms.lms.doctype.lms_live_class.lms_live_class.update_attendance",
+		"lms.cognilearn.adapters.study.remind_due_rechecks",
 	],
 	"daily": [
 		"lms.job.doctype.job_opportunity.job_opportunity.update_job_openings",

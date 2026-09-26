@@ -1,0 +1,152 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "creation": "2026-09-26 09:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "member",
+  "course",
+  "participant",
+  "kind",
+  "action",
+  "condition",
+  "policy_version",
+  "model_version",
+  "propensity",
+  "reason",
+  "state",
+  "diagnosis",
+  "candidates",
+  "chosen",
+  "judgments"
+ ],
+ "fields": [
+  {
+   "fieldname": "member",
+   "fieldtype": "Link",
+   "label": "Member",
+   "options": "User",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "course",
+   "fieldtype": "Link",
+   "label": "Course",
+   "options": "LMS Course",
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "participant",
+   "fieldtype": "Link",
+   "label": "Participant",
+   "options": "CL Study Participant"
+  },
+  {
+   "fieldname": "kind",
+   "fieldtype": "Select",
+   "label": "Kind",
+   "options": "plan\nreplan\nrecheck\nleak_gate",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "action",
+   "fieldtype": "Data",
+   "label": "Action",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "condition",
+   "fieldtype": "Data",
+   "label": "Condition",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "policy_version",
+   "fieldtype": "Data",
+   "label": "Policy Version"
+  },
+  {
+   "fieldname": "model_version",
+   "fieldtype": "Data",
+   "label": "Learner Model Version"
+  },
+  {
+   "fieldname": "propensity",
+   "fieldtype": "Float",
+   "label": "Propensity",
+   "description": "Probability the policy had of taking this action; 1 for deterministic rules."
+  },
+  {
+   "fieldname": "reason",
+   "fieldtype": "Small Text",
+   "label": "Reason Shown"
+  },
+  {
+   "fieldname": "state",
+   "fieldtype": "JSON",
+   "label": "Learner State (before)"
+  },
+  {
+   "fieldname": "diagnosis",
+   "fieldtype": "JSON",
+   "label": "Diagnosis"
+  },
+  {
+   "fieldname": "candidates",
+   "fieldtype": "JSON",
+   "label": "Candidates Considered"
+  },
+  {
+   "fieldname": "chosen",
+   "fieldtype": "JSON",
+   "label": "Chosen"
+  },
+  {
+   "fieldname": "judgments",
+   "fieldtype": "JSON",
+   "label": "Jev Judgments"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-09-26 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "CogniLearn",
+ "name": "CL Decision Log",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 1,
+   "share": 0
+  },
+  {
+   "role": "Moderator",
+   "read": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 0,
+   "share": 0
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 0,
+ "autoname": "hash",
+ "naming_rule": "Random"
+}

@@ -12279,3 +12279,186 @@ msgstr "Hàng chờ duyệt"
 
 msgid "Course from Documents"
 msgstr "Tạo khóa từ tài liệu"
+
+msgid "This course has no adaptive practice yet."
+msgstr "Khóa học này chưa có luyện tập thích ứng."
+
+msgid "Start with the baseline quiz"
+msgstr "Bắt đầu bằng bài kiểm tra đầu vào"
+
+msgid "A short quiz on your own, without answers shown. It tells the system what you already know and where the gaps are."
+msgstr "Một bài kiểm tra ngắn, tự làm, không hiện đáp án. Kết quả giúp hệ thống biết bạn đã vững phần nào và còn hổng ở đâu."
+
+msgid "Take the baseline quiz"
+msgstr "Làm bài kiểm tra đầu vào"
+
+msgid "Your practice is ready"
+msgstr "Phần luyện tập của bạn đã sẵn sàng"
+
+msgid "Practice comes in short sets. After each set the system decides what you should work on next."
+msgstr "Luyện tập gồm các lượt ngắn. Sau mỗi lượt, hệ thống quyết định bạn nên luyện gì tiếp theo."
+
+msgid "Start practising"
+msgstr "Bắt đầu luyện tập"
+
+msgid "Practice set {0} of {1}"
+msgstr "Lượt luyện tập {0}/{1}"
+
+msgid "{0}/{1} answered"
+msgstr "Đã làm {0}/{1}"
+
+msgid "Your answer"
+msgstr "Câu trả lời của bạn"
+
+msgid "Correct."
+msgstr "Đúng."
+
+msgid "Not yet."
+msgstr "Chưa đúng."
+
+msgid "Set finished"
+msgstr "Xong lượt này"
+
+msgid "Continue"
+msgstr "Tiếp tục"
+
+msgid "Practice done for now"
+msgstr "Tạm xong phần luyện tập"
+
+msgid "Your recheck opens on {0}. Coming back after a few days shows whether what you practised has stuck."
+msgstr "Bài kiểm tra lại mở vào {0}. Quay lại sau vài ngày sẽ cho biết kiến thức bạn luyện có còn giữ được không."
+
+msgid "Time for your recheck"
+msgstr "Đến lúc làm bài kiểm tra lại"
+
+msgid "A short quiz on your own, like the first one."
+msgstr "Một bài kiểm tra ngắn, tự làm, giống bài đầu vào."
+
+msgid "Take the recheck"
+msgstr "Làm bài kiểm tra lại"
+
+msgid "You have finished this study. Thank you!"
+msgstr "Bạn đã hoàn thành đợt thử nghiệm. Cảm ơn bạn!"
+
+msgid "Could not load your practice."
+msgstr "Không tải được phần luyện tập."
+
+msgid "Could not start practice."
+msgstr "Không bắt đầu được phần luyện tập."
+
+msgid "Could not check your answer."
+msgstr "Không kiểm tra được câu trả lời."
+
+msgid "Adaptive practice"
+msgstr "Luyện tập thích ứng"
+
+msgid "Map again"
+msgstr "Map lại"
+
+msgid "{0} concepts"
+msgstr "{0} khái niệm"
+
+msgid "{0} questions mapped"
+msgstr "{0} câu hỏi đã gắn khái niệm"
+
+msgid "{0} waiting for review"
+msgstr "{0} quyết định chờ duyệt"
+
+msgid "Knowledge graph"
+msgstr "Đồ thị kiến thức"
+
+msgid "Arrows: accepted prerequisites. Click a concept to see its pending edges and questions."
+msgstr "Mũi tên: quan hệ tiên quyết đã chấp nhận. Bấm vào một khái niệm để xem các cạnh chờ duyệt và câu hỏi của nó."
+
+msgid "{0} questions"
+msgstr "{0} câu hỏi"
+
+msgid "Waiting for review"
+msgstr "Chờ duyệt"
+
+msgid "Decisions the model was unsure about. Nothing here affects learners until you accept it."
+msgstr "Các quyết định mô hình chưa chắc chắn. Chưa có mục nào ảnh hưởng tới người học cho đến khi bạn chấp nhận."
+
+msgid "Nothing to review."
+msgstr "Không có gì cần duyệt."
+
+msgid "Must “{0}” be learned before “{1}”?"
+msgstr "Phải học “{0}” trước “{1}”?"
+
+msgid "Does this question test “{0}”?"
+msgstr "Câu này có kiểm tra “{0}” không?"
+
+msgid "Accept"
+msgstr "Chấp nhận"
+
+msgid "Questions and their concepts"
+msgstr "Câu hỏi và khái niệm của chúng"
+
+msgid "Show all"
+msgstr "Hiện tất cả"
+
+msgid "Not mapped yet"
+msgstr "Chưa gắn khái niệm"
+
+msgid "Could not load the knowledge map."
+msgstr "Không tải được bản đồ kiến thức."
+
+msgid "Last run: {0}"
+msgstr "Lần chạy gần nhất: {0}"
+
+msgid "{0}% decided automatically ({1})"
+msgstr "{0}% quyết định tự động ({1})"
+
+msgid "Could not save the decision."
+msgstr "Không lưu được quyết định."
+
+msgid "Mapping started. Reload in a minute to see the result."
+msgstr "Đã bắt đầu map. Tải lại trang sau khoảng một phút để xem kết quả."
+
+msgid "Knowledge map"
+msgstr "Bản đồ kiến thức"
+
+msgid "CogniLearn practice"
+msgstr "Luyện tập CogniLearn"
+
+msgid "Loading exercise..."
+msgstr "Đang tải bài tập..."
+
+msgid "Write the list, e.g. head -> 1 -> 2"
+msgstr "Viết danh sách, ví dụ head -> 1 -> 2"
+
+msgid "Put the statements in execution order"
+msgstr "Sắp xếp các câu lệnh theo thứ tự thực thi"
+
+msgid "Hint {0}"
+msgstr "Gợi ý {0}"
+
+msgid "(counted as guided practice)"
+msgstr "(tính là luyện tập có hướng dẫn)"
+
+msgid "Hint"
+msgstr "Gợi ý"
+
+msgid "Try again"
+msgstr "Thử lại"
+
+msgid "Baseline · on your own"
+msgstr "Đầu vào · tự làm"
+
+msgid "Guided practice · hints allowed"
+msgstr "Luyện tập có hướng dẫn · được xem gợi ý"
+
+msgid "Checkpoint · on your own"
+msgstr "Checkpoint · tự làm"
+
+msgid "Recheck · on your own"
+msgstr "Kiểm tra lại · tự làm"
+
+msgid "No exercises found for this block."
+msgstr "Không tìm thấy bài tập cho khối này."
+
+msgid "Could not load the exercise."
+msgstr "Không tải được bài tập."
+
+msgid "Right answer: {0}"
+msgstr "Đáp án đúng: {0}"

@@ -1,0 +1,141 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "creation": "2026-09-26 09:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "study_id",
+  "course",
+  "active",
+  "baseline_quiz",
+  "recheck_quiz",
+  "set_size",
+  "budget_sets",
+  "recheck_delay_hours",
+  "excluded_questions",
+  "leak_checks"
+ ],
+ "fields": [
+  {
+   "fieldname": "study_id",
+   "fieldtype": "Data",
+   "label": "Study ID",
+   "reqd": 1,
+   "unique": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "course",
+   "fieldtype": "Link",
+   "label": "Course",
+   "options": "LMS Course",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "active",
+   "fieldtype": "Check",
+   "label": "Enrolling",
+   "default": "1",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "baseline_quiz",
+   "fieldtype": "Link",
+   "label": "Baseline Quiz",
+   "options": "LMS Quiz",
+   "description": "Everyone takes it first; its questions are not reused for practice."
+  },
+  {
+   "fieldname": "recheck_quiz",
+   "fieldtype": "Link",
+   "label": "Recheck Quiz",
+   "options": "LMS Quiz",
+   "description": "Held-out delayed test, identical for both conditions."
+  },
+  {
+   "fieldname": "set_size",
+   "fieldtype": "Int",
+   "label": "Questions per Practice Set",
+   "default": "4"
+  },
+  {
+   "fieldname": "budget_sets",
+   "fieldtype": "Int",
+   "label": "Practice Sets per Learner",
+   "default": "3"
+  },
+  {
+   "fieldname": "recheck_delay_hours",
+   "fieldtype": "Int",
+   "label": "Recheck Delay (hours)",
+   "default": "72"
+  },
+  {
+   "fieldname": "excluded_questions",
+   "fieldtype": "JSON",
+   "label": "Excluded by Leak Gate",
+   "read_only": 1
+  },
+  {
+   "fieldname": "leak_checks",
+   "fieldtype": "JSON",
+   "label": "Leak Gate Judgments",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-09-26 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "CogniLearn",
+ "name": "CL Study",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "share": 0
+  },
+  {
+   "role": "Moderator",
+   "read": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 0,
+   "share": 0
+  },
+  {
+   "role": "Course Creator",
+   "read": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 0,
+   "share": 0
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "autoname": "field:study_id",
+ "title_field": "study_id",
+ "naming_rule": "By fieldname"
+}

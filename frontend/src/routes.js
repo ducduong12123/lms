@@ -112,6 +112,19 @@ export const routes = [
 		component: () => import('@/pages/SCORMChapter.vue'),
 		props: true,
 	},
+	// CogniLearn: adaptive practice for learners, knowledge map for teachers.
+	{
+		path: '/courses/:courseName/practice',
+		name: 'CogniLearnPractice',
+		component: () => import('@/pages/CogniLearn/Practice.vue'),
+		props: true,
+	},
+	{
+		path: '/courses/:courseName/knowledge-map',
+		name: 'CogniLearnMap',
+		component: () => import('@/pages/CogniLearn/KnowledgeMap.vue'),
+		props: true,
+	},
 	{
 		path: '/batches',
 		name: 'Batches',

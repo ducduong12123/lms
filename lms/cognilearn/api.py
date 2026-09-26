@@ -6,7 +6,7 @@ import json
 
 import frappe
 
-from lms.cognilearn.adapters import events, repository
+from lms.cognilearn.adapters import events, repository, study
 from lms.cognilearn.core import evaluator
 from lms.lms.utils import has_course_instructor_role, has_moderator_role
 
@@ -27,7 +27,11 @@ def get_items(codes: str | list) -> list[dict]:
 	"""Items as the browser may see them: no answer key, no misconception map."""
 	_require_login()
 	codes = json.loads(codes) if isinstance(codes, str) else codes
-	return [evaluator.public_item(repository.get_item(code)) for code in codes if frappe.db.exists("CL Item", code)]
+	return [
+		evaluator.public_item(repository.get_item(code))
+		for code in codes
+		if frappe.db.exists("CL Item", code)
+	]
 
 
 @frappe.whitelist(methods=["POST"])
@@ -82,7 +86,9 @@ def my_state() -> dict:
 def get_knowledge_map(course: str) -> dict:
 	_require_teacher()
 	components = frappe.get_all(
-		"CL Knowledge Component", filters={"course": course}, fields=["name", "kc_key", "label", "description"]
+		"CL Knowledge Component",
+		filters={"course": course},
+		fields=["name", "kc_key", "label", "description"],
 	)
 	edges = frappe.get_all(
 		"CL Knowledge Edge",
@@ -92,7 +98,15 @@ def get_knowledge_map(course: str) -> dict:
 	links = frappe.get_all(
 		"CL Item Map",
 		filters={"course": course},
-		fields=["name", "question", "question_doctype", "knowledge_component", "status", "probability", "source"],
+		fields=[
+			"name",
+			"question",
+			"question_doctype",
+			"knowledge_component",
+			"status",
+			"probability",
+			"source",
+		],
 	)
 	runs = frappe.get_all(
 		"CL Knowledge Map Run",
@@ -101,7 +115,21 @@ def get_knowledge_map(course: str) -> dict:
 		order_by="creation desc",
 		limit=1,
 	)
-	return {"components": components, "edges": edges, "links": links, "last_run": runs[0] if runs else None}
+	questions = {}
+	for link in links:
+		if link.question not in questions:
+			question = (
+				repository._question(link.question) if link.question_doctype == "LMS Question" else None
+			)
+			questions[link.question] = question["text"] if question else link.question
+	return {
+		"components": components,
+		"edges": edges,
+		"links": links,
+		"questions": questions,
+		"course_title": frappe.db.get_value("LMS Course", course, "title"),
+		"last_run": runs[0] if runs else None,
+	}
 
 
 @frappe.whitelist(methods=["POST"])
@@ -125,3 +153,88 @@ def review_decision(doctype: str, name: str, status: str) -> dict:
 def seed_pilot_items() -> dict:
 	frappe.only_for("System Manager")
 	return {"items": repository.seed_pilot_items()}
+
+
+# ---- adaptive study (any subject) ------------------------------------------------------------
+
+
+def _study(course: str):
+	found = study.active_study(course)
+	if not found:
+		frappe.throw("This course has no active CogniLearn study.", frappe.DoesNotExistError)
+	return found
+
+
+@frappe.whitelist()
+def study_status(course: str) -> dict:
+	member = _require_login()
+	found = study.active_study(course)
+	view = study.student_view(found, member) if found else {"study": False}
+	return {**view, "course_title": frappe.db.get_value("LMS Course", course, "title")}
+
+
+@frappe.whitelist(methods=["POST"])
+def start_practice(course: str) -> dict:
+	member = _require_login()
+	found = _study(course)
+	if not study.baseline_done(found, member):
+		frappe.throw("Take the baseline quiz first.")
+	participant = study.ensure_participant(found, member)
+	if participant.status == "Practising" and not study.open_set(participant):
+		study.plan_next_set(found, participant)
+	return {
+		**study.student_view(found, member),
+		"course_title": frappe.db.get_value("LMS Course", course, "title"),
+	}
+
+
+@frappe.whitelist(methods=["POST"])
+def answer_practice(course: str, question: str, answer: str | list) -> dict:
+	member = _require_login()
+	found = _study(course)
+	participant = study.ensure_participant(found, member)
+	practice_set = study.open_set(participant)
+	if not practice_set:
+		frappe.throw("You have no open practice set.")
+	if isinstance(answer, str) and answer.startswith("["):
+		answer = json.loads(answer)
+	return study.answer_practice(found, participant, practice_set, question, answer)
+
+
+@frappe.whitelist()
+def study_overview(course: str) -> dict:
+	"""Teacher view: participants and their progress, never mixed into the student API."""
+	_require_teacher()
+	found = _study(course)
+	participants = frappe.get_all(
+		"CL Study Participant",
+		filters={"study": found.name},
+		fields=["name", "member", "condition", "status", "recheck_due_at", "enrollment_index"],
+		order_by="enrollment_index asc",
+	)
+	for row in participants:
+		row.sets_done = frappe.db.count("CL Practice Set", {"participant": row.name, "status": "Done"})
+	return {
+		"study": found.as_dict(),
+		"participants": participants,
+		"pool_size": len(study.practice_pool(found)),
+		"graph": study.course_graph(course),
+	}
+
+
+@frappe.whitelist(methods=["POST"])
+def run_leak_gate(course: str) -> dict:
+	_require_teacher()
+	return study.run_leak_gate(_study(course))
+
+
+@frappe.whitelist()
+def course_links(course: str) -> dict:
+	"""Which CogniLearn pages this user can open for a course (nothing for plain courses)."""
+	if frappe.session.user == "Guest":
+		return {"practice": False, "map": False}
+	teacher = has_moderator_role() or has_course_instructor_role() or "System Manager" in frappe.get_roles()
+	return {
+		"practice": bool(study.active_study(course)),
+		"map": teacher and bool(frappe.db.exists("CL Knowledge Component", {"course": course})),
+	}

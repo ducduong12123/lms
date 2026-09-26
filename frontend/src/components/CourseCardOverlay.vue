@@ -35,7 +35,13 @@
 						</span>
 					</Button>
 					<CertificationLinks :courseName="course.data.name" class="w-full" />
+					<CogniLearnCourseLinks :courseName="course.data.name" />
 				</div>
+				<CogniLearnCourseLinks
+					v-else-if="isAdmin && course.data?.name"
+					:courseName="course.data.name"
+					class="mb-8"
+				/>
 				<Button
 					v-else-if="course.data?.paid_course && !isAdmin"
 					variant="solid"
@@ -151,6 +157,7 @@ import type { FrappeResourceError } from 'frappe-ui'
 import { resourceErrorMessage } from '@/utils/resource'
 import { useRouter } from 'vue-router'
 import CertificationLinks from '@/components/CertificationLinks.vue'
+import CogniLearnCourseLinks from '@/components/CogniLearn/CourseLinks.vue'
 import VideoPreview from '@/components/VideoPreview.vue'
 import { useTelemetry } from '@framework/ui/telemetry/index'
 import { openExternal } from '@/utils/openExternal'
